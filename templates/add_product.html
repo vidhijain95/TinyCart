@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Add Product Details – TinyCart</title>
+    <link rel="icon" href="logo.png" type="image/x-icon">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #232f3e;
+            background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1500&q=80') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+        }
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.88);
+            z-index: -1;
+        }
+        nav {
+            position: sticky;
+            top: 0;
+            width: 100%;
+            z-index: 100;
+            background: rgba(35,47,62,0.85);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 64px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .navbar-content {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo img {
+            height: 38px;
+            width: auto;
+            vertical-align: middle;
+        }
+        .logo span {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #febd69;
+            letter-spacing: 2px;
+        }
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            margin-left: 2rem;
+            font-size: 1.07rem;
+            position: relative;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover, .nav-links a.active {
+            color: #febd69;
+        }
+        .nav-links a::after {
+            content: '';
+            display: block;
+            width: 0;
+            height: 2px;
+            background: #febd69;
+            transition: width 0.3s;
+            position: absolute;
+            left: 0;
+            bottom: -4px;
+        }
+        .nav-links a:hover::after, .nav-links a.active::after {
+            width: 100%;
+        }
+        .container {
+            max-width: 800px;
+            margin: 2rem auto 2rem auto;
+            background: rgba(255,255,255,0.97);
+            border-radius: 14px;
+            box-shadow: 0 4px 24px rgba(35,47,62,.09);
+            padding: 2.5rem 2rem 2rem 2rem;
+        }
+        h1 {
+            font-size: 2rem;
+            color: #232f3e;
+            margin-bottom: 1.2rem;
+            text-align: center;
+        }
+        .section-title {
+            font-size: 1.3rem;
+            color: #ffa500;
+            margin-bottom: 0.8rem;
+            font-weight: bold;
+            text-align: left;
+        }
+        form {
+            width: 100%;
+        }
+        label {
+            font-size: 1.05rem;
+            color: #232f3e;
+            font-weight: 500;
+            margin-bottom: 0.3rem;
+            display: block;
+            text-align: left;
+        }
+        input[type="text"], input[type="number"], input[type="email"], input[type="url"] {
+            width: 100%;
+            padding: 0.7em 1em;
+            border: 2px solid #ffd580;
+            border-radius: 8px;
+            font-size: 1.05rem;
+            margin-bottom: 1rem;
+            background: #fffbe7;
+            color: #232f3e;
+            outline: none;
+            transition: border 0.2s;
+        }
+        input:focus {
+            border-color: #ffa500;
+        }
+        hr {
+            border: none;
+            border-top: 2px solid #ffd580;
+            margin: 1.5rem 0;
+        }
+        .products-section {
+            margin-bottom: 2rem;
+        }
+        .product-card {
+            background: #f8fafc;
+            border: 2px solid #ffd580;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(255,186,58,0.06);
+            padding: 1.3rem 1.2rem 1.2rem 1.2rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+        .product-card h2 {
+            color: #166534;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        .remove-btn {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            background: #ffd6d6;
+            color: #c0392b;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .remove-btn:hover {
+            background: #ffb3b3;
+        }
+        .form-actions {
+            display: flex;
+            gap: 1.2rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+        }
+        .cta-btn, .save-btn {
+            background: #ffa500;
+            color: #232f3e;
+            font-weight: bold;
+            font-size: 1.1rem;
+            padding: 0.7em 2em;
+            border: none;
+            border-radius: 30px;
+            text-decoration: none;
+            box-shadow: 0 2px 8px rgba(35,47,62,.08);
+            transition: background 0.2s, color 0.2s, transform 0.15s;
+            cursor: pointer;
+            text-align: center;
+        }
+        .cta-btn:hover, .save-btn:hover {
+            background: #e69500;
+            color: #fff;
+            transform: translateY(-2px) scale(1.04);
+        }
+        .save-btn {
+            background: #4ade80;
+            color: #166534;
+        }
+        .save-btn:hover {
+            background: #22c55e;
+            color: #fff;
+        }
+        .info {
+            color: #7d4c00;
+            font-size: 1.08rem;
+            margin-bottom: 1.5rem;
+            background: #fffbe7;
+            border-left: 4px solid #ffd580;
+            border-radius: 7px;
+            padding: 0.7rem 1rem;
+            display: inline-block;
+            text-align: left;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 1.2rem 0.5rem;
+            }
+            .navbar-content {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 0 0.5rem;
+            }
+            .nav-links {
+                margin-top: 0.7rem;
+            }
+            .nav-links a {
+                margin-left: 1rem;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav>
+        <div class="navbar-content">
+            <div class="logo">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="TinyCart Logo">
+                <span>TinyCart</span>
+            </div>
+            <div class="nav-links">
+                <a href="/" >Home</a>
+                <a href="/how-it-works">How it Works</a>
+                <a href="/create-store" class="active">Create Store</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Create Your Store</h1>
+        <div class="info">
+            <ul>
+                <li>Enter your store details and the details for each unique product you'd like to sell.</li>
+                <li>You can remove a product before submitting if you change your mind.</li>
+                <li>Click "Save Progress" to keep your work safe before submitting.</li>
+            </ul>
+        </div>
+        <form method="POST" action="/submit-store" id="storeForm" autocomplete="off">
+            <div class="section-title">Store Details</div>
+            <label for="storename">Store Name:</label>
+            <input type="text" id="storename" name="storename" placeholder="Enter your store name" required>
+
+            <label for="email">Owner Email:</label>
+            <input type="email" id="email" name="email" placeholder="Enter owner email" required>
+
+            <label for="description">Store Description:</label>
+            <input type="text" id="description" name="description" placeholder="Enter store description" required>
+            <hr>
+            <div class="section-title">Product Details</div>
+            <div class="products-section" id="productsSection">
+                {% for i in range(count) %}
+                <div class="product-card" data-index="{{i}}">
+                    <button type="button" class="remove-btn" title="Remove this product" onclick="removeProduct(this)">&times;</button>
+                    <h2>Product {{i+1}}</h2>
+                    <label>Product Name:</label>
+                    <input type="text" name="pname[]" placeholder="Enter product name" required>
+                    <label>Product Description:</label>
+                    <input type="text" name="pd[]" placeholder="Enter product description" required>
+                    <label>Product Quantity:</label>
+                    <input type="number" name="pq[]" min="1" placeholder="Enter product quantity" required>
+                    <label>Product Price (₹):</label>
+                    <input type="number" name="pp[]" min="0" step="0.01" placeholder="Enter product price" required>
+                    <label>Product Image URL:</label>
+                    <input type="url" name="pi[]" placeholder="Enter image URL" required>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="form-actions">
+                <button type="button" class="save-btn" onclick="saveProgress()">Save Progress</button>
+                <button type="submit" class="cta-btn">Create Store</button>
+            </div>
+        </form>
+    </div>
+    <footer>
+        &lt;&lt;&lt; &copy; VIDHI JAIN &gt;&gt;&gt;
+    </footer>
+    <script>
+        // Remove product card
+        function removeProduct(btn) {
+            if (document.querySelectorAll('.product-card').length > 1) {
+                btn.parentElement.remove();
+            } else {
+                alert("At least one product is required.");
+            }
+        }
+        // Save Progress to localStorage
+        function saveProgress() {
+            const form = document.getElementById('storeForm');
+            const data = {};
+            Array.from(form.elements).forEach(el => {
+                if (el.name) {
+                    if (el.type === "checkbox" || el.type === "radio") {
+                        if (!data[el.name]) data[el.name] = [];
+                        if (el.checked) data[el.name].push(el.value);
+                    } else if (el.name.endsWith("[]")) {
+                        if (!data[el.name]) data[el.name] = [];
+                        data[el.name].push(el.value);
+                    } else {
+                        data[el.name] = el.value;
+                    }
+                }
+            });
+            localStorage.setItem("tinycart_store_progress", JSON.stringify(data));
+            alert("Progress saved! You can return later and your data will be restored.");
+        }
+        // Restore Progress from localStorage
+        window.onload = function() {
+            const saved = localStorage.getItem("tinycart_store_progress");
+            if (saved) {
+                const data = JSON.parse(saved);
+                for (let key in data) {
+                    if (Array.isArray(data[key])) {
+                        let els = document.getElementsByName(key);
+                        data[key].forEach((val, idx) => {
+                            if (els[idx]) els[idx].value = val;
+                        });
+                    } else {
+                        let el = document.getElementsByName(key)[0];
+                        if (el) el.value = data[key];
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

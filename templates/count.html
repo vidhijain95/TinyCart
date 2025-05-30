@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Choose Number of Products – TinyCart</title>
+  <link rel="icon" href="logo.png" type="image/x-icon">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: #232f3e;
+      background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1500&q=80') no-repeat center center fixed;
+      background-size: cover;
+      min-height: 100vh;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255,255,255,0.88);
+      z-index: -1;
+    }
+    nav {
+      position: sticky;
+      top: 0;
+      width: 100%;
+      z-index: 100;
+      background: rgba(35,47,62,0.85);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 64px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .navbar-content {
+      width: 100%;
+      max-width: 1200px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo img {
+      height: 38px;
+      width: auto;
+      vertical-align: middle;
+    }
+    .logo span {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #febd69;
+      letter-spacing: 2px;
+    }
+    .nav-links a {
+      color: #fff;
+      text-decoration: none;
+      margin-left: 2rem;
+      font-size: 1.07rem;
+      position: relative;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover, .nav-links a.active {
+      color: #febd69;
+    }
+    .nav-links a::after {
+      content: '';
+      display: block;
+      width: 0;
+      height: 2px;
+      background: #febd69;
+      transition: width 0.3s;
+      position: absolute;
+      left: 0;
+      bottom: -4px;
+    }
+    .nav-links a:hover::after, .nav-links a.active::after {
+      width: 100%;
+    }
+    .container {
+      max-width: 500px;
+      margin: 3rem auto 2rem auto;
+      background: rgba(255,255,255,0.97);
+      border-radius: 14px;
+      box-shadow: 0 4px 24px rgba(35,47,62,.09);
+      padding: 2.5rem 2rem 2rem 2rem;
+      text-align: center;
+      overflow: visible;
+      position: relative;
+    }
+    h2 {
+      font-size: 2rem;
+      color: #232f3e;
+      margin-bottom: 1rem;
+      font-weight: bold;
+    }
+    .info {
+      color: #7d4c00;
+      font-size: 1.08rem;
+      margin-bottom: 1.5rem;
+      background: #fffbe7;
+      border-left: 4px solid #ffd580;
+      border-radius: 7px;
+      padding: 0.7rem 1rem;
+      display: inline-block;
+      text-align: left;
+    }
+    form {
+      margin-top: 1.2rem;
+    }
+    label {
+      font-size: 1.09rem;
+      color: #232f3e;
+      font-weight: 500;
+      margin-bottom: 0.7rem;
+      display: block;
+      text-align: left;
+    }
+    select {
+      width: 100%;
+      padding: 0.7em 1em;
+      border: 2px solid #ffd580;
+      border-radius: 8px;
+      font-size: 1.07rem;
+      margin-bottom: 1.5rem;
+      background: #fffbe7;
+      color: #232f3e;
+      outline: none;
+      transition: border 0.2s;
+      position: relative;
+      z-index: 1;
+    }
+    select:focus {
+      border-color: #ffa500;
+    }
+    .cta-btn {
+      display: block;
+      width: 100%;
+      background: #ffa500;
+      color: #232f3e;
+      font-weight: bold;
+      font-size: 1.2rem;
+      padding: 0.8em 0;
+      border: none;
+      border-radius: 30px;
+      text-decoration: none;
+      box-shadow: 0 2px 8px rgba(35,47,62,.08);
+      transition: background 0.2s, color 0.2s, transform 0.15s;
+      cursor: pointer;
+      margin-top: 0.5rem;
+    }
+    .cta-btn:hover {
+      background: #e69500;
+      color: #fff;
+      transform: translateY(-2px) scale(1.04);
+    }
+    .steps {
+      margin-top: 2.5rem;
+      text-align: left;
+    }
+    .steps-title {
+      font-weight: bold;
+      color: #232f3e;
+      margin-bottom: 0.3rem;
+    }
+    .steps-list {
+      list-style: none;
+      padding-left: 0;
+    }
+    .steps-list li {
+      margin-bottom: 0.7rem;
+      padding-left: 1.2em;
+      position: relative;
+      font-size: 1.04rem;
+    }
+    .steps-list li::before {
+      content: "→";
+      color: #ffa500;
+      font-weight: bold;
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+    @media (max-width: 600px) {
+      .container {
+        padding: 1.2rem 0.5rem;
+      }
+      .navbar-content {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 0 0.5rem;
+      }
+      .nav-links {
+        margin-top: 0.7rem;
+      }
+      .nav-links a {
+        margin-left: 1rem;
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav>
+    <div class="navbar-content">
+      <div class="logo">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="TinyCart Logo">
+        <span>TinyCart</span>
+      </div>
+      <div class="nav-links">
+        <a href="/" >Home</a>
+        <a href="/how-it-works">How it Works</a>
+        <a href="/create-store" class="active">Create Store</a>
+      </div>
+    </div>
+  </nav>
+  <div class="container">
+    <h2>How many unique products do you want to add?</h2>
+    <div class="info">
+      <ul>
+        <li>Select the number of different products you want to showcase in your store.</li>
+        <li>This helps us generate a simple form for you to enter details for each product.</li>
+        <li>You can add up to 100 unique products at once.</li>
+      </ul>
+    </div>
+    <form method="POST" action="/create-store">
+      <label for="count">Select number of products:</label>
+      <select name="count" id="count" required>
+        {% for i in range(1, 101) %}
+          <option value="{{i}}">{{ i }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="cta-btn">Next</button>
+    </form>
+    <div class="steps">
+      <div class="steps-title">What happens next?</div>
+      <ul class="steps-list">
+        <li>After selecting, you'll be guided to enter details for each product.</li>
+        <li>Once done, your unique TinyCart store will be ready to share!</li>
+      </ul>
+    </div>
+  </div>
+  <footer>
+    &lt;&lt;&lt; &copy; VIDHI JAIN &gt;&gt;&gt;
+  </footer>
+</body>
+</html>

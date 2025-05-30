@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TinyCart – Your Micro-Store Solution</title>
+    <link rel="icon" href="logo.png" type="image/x-icon">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Reset */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #232f3e;
+            background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1500&q=80') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+        }
+
+        /* Overlay for background */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.88);
+            z-index: -1;
+        }
+
+        /* Navbar */
+        nav {
+            position: sticky;
+            top: 0;
+            width: 100%;
+            z-index: 100;
+            background: rgba(35,47,62,0.85);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 64px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .navbar-content {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo img {
+            height: 38px;
+            width: auto;
+            vertical-align: middle;
+        }
+        .logo span {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #febd69;
+            letter-spacing: 2px;
+        }
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            margin-left: 2rem;
+            font-size: 1.07rem;
+            position: relative;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover, .nav-links a.active {
+            color: #febd69;
+        }
+        .nav-links a::after {
+            content: '';
+            display: block;
+            width: 0;
+            height: 2px;
+            background: #febd69;
+            transition: width 0.3s;
+            position: absolute;
+            left: 0;
+            bottom: -4px;
+        }
+        .nav-links a:hover::after, .nav-links a.active::after {
+            width: 100%;
+        }
+
+        /* Hero */
+        .hero {
+            text-align: center;
+            padding: 4rem 2rem 2rem 2rem;
+        }
+        .hero h1 {
+            font-size: 2.7rem;
+            font-weight: bold;
+            color: #232f3e;
+            margin-bottom: 0.7rem;
+        }
+        .hero em {
+            font-size: 1.2rem;
+            color: #7d4c00;
+        }
+        .hero p {
+            margin-top: 1.2rem;
+            font-size: 1.12rem;
+            color: #444;
+        }
+
+        /* Testimonial */
+        .testimonial {
+            background: #e3fcec;
+            border-left: 5px solid #4ade80;
+            border-radius: 8px;
+            margin: 2rem auto 2.5rem auto;
+            max-width: 700px;
+            padding: 1.2rem 2rem;
+            font-style: italic;
+            color: #166534;
+            font-size: 1.13rem;
+            box-shadow: 0 2px 10px rgba(76,175,80,0.07);
+            position: relative;
+        }
+        .testimonial::before {
+            content: "❝";
+            font-size: 2.5rem;
+            color: #4ade80;
+            position: absolute;
+            left: 18px;
+            top: 2px;
+        }
+        .testimonial::after {
+            content: "❞";
+            font-size: 2.5rem;
+            color: #4ade80;
+            position: absolute;
+            right: 18px;
+            bottom: 2px;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto 2rem auto;
+            background: rgba(255,255,255,0.97);
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(35,47,62,.09);
+            padding: 2rem 2rem 1.5rem 2rem;
+        }
+
+        /* Product Grid */
+        .product-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 28px;
+            margin-bottom: 2rem;
+        }
+        .product-card {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            width: 250px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            overflow: hidden;
+            transition: 0.3s;
+            position: relative;
+        }
+        .product-card:hover {
+            border-color: #4ade80;
+            box-shadow: 0 4px 20px rgba(76,175,80,0.11);
+            transform: translateY(-3px) scale(1.03);
+        }
+        .product-card img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-bottom: 1px solid #eee;
+        }
+        .product-details {
+            padding: 15px;
+        }
+        .product-details table {
+            width: 100%;
+            font-size: 14px;
+        }
+        .product-details td {
+            padding: 4px 0;
+        }
+
+        /* How it Works */
+        .how-it-works {
+            margin: 2.5rem 0 2rem 0;
+            padding: 2rem 1.5rem;
+            background: linear-gradient(90deg, #fffbe7 70%, #ffe0b2 100%);
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(255,186,58,0.07);
+        }
+        .how-it-works h2 {
+            color: #232f3e;
+            font-size: 2rem;
+            margin-bottom: 1.2rem;
+            text-align: center;
+        }
+        .steps-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            justify-content: center;
+        }
+        .step {
+            flex: 1 1 260px;
+            max-width: 340px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(255,186,58,0.10);
+            padding: 1.3rem 1rem 1.1rem 1rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            position: relative;
+            min-width: 220px;
+        }
+        .step-icon {
+            font-size: 2.2rem;
+            color: #ffa500;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        .step-title {
+            font-weight: bold;
+            color: #232f3e;
+            margin-bottom: 0.5rem;
+        }
+        .step-desc {
+            color: #444;
+            font-size: 1.03rem;
+        }
+
+        /* CTA Button */
+        .cta-btn {
+            display: inline-block;
+            background: #ffa500;
+            color: #232f3e;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 0.9em 2.2em;
+            border: none;
+            border-radius: 30px;
+            text-decoration: none;
+            margin: 2rem auto 0 auto;
+            box-shadow: 0 2px 8px rgba(35,47,62,.08);
+            transition: background 0.2s, color 0.2s, transform 0.15s;
+            cursor: pointer;
+            text-align: center;
+        }
+        .cta-btn:hover {
+            background: #e69500;
+            color: #fff;
+            transform: translateY(-2px) scale(1.04);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 1.1rem 0;
+            background: rgba(35,47,62,0.93);
+            color: #febd69;
+            font-size: 1.08rem;
+            margin-top: 2rem;
+            letter-spacing: 1px;
+        }
+        @media (max-width: 900px) {
+            .navbar-content, .container {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            .hero {
+                padding: 2rem 1rem;
+            }
+            .steps-list {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+        }
+        @media (max-width: 600px) {
+            .navbar-content {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 0 0.5rem;
+            }
+            .nav-links {
+                margin-top: 0.7rem;
+            }
+            .nav-links a {
+                margin-left: 1rem;
+                font-size: 1rem;
+            }
+            .container {
+                padding: 1.2rem 0.5rem;
+            }
+            .hero h1 {
+                font-size: 2rem;
+            }
+            .product-grid {
+                flex-direction: column;
+                align-items: center;
+                gap: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav>
+        <div class="navbar-content">
+            <div class="logo">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="TinyCart Logo">
+                <span>TinyCart</span>
+            </div>
+            <div class="nav-links">
+                <a href="#about" class="active">About</a>
+                <a href="#products">Products</a>
+                <a href="#how">How it Works</a>
+                <a href="#create">Create Store</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="hero" id="about">
+        <h1>Create Your Own Tiny Store in Seconds!</h1>
+        <em>Empowering Small Sellers, Artists, and Students</em>
+        <p>
+            Are you a small seller, artist, or student looking to showcase or sell products online, but struggling with high costs, technical hassles, or lack of coding knowledge?<br>
+            <span style="color:#ffa500;font-weight:bold;">TinyCart is here to help you launch your micro-store in minutes!</span>
+        </p>
+    </div>
+
+    <!-- Testimonial Section (EcoGlow) -->
+    <div class="testimonial">
+        "I wanted to sell eco-friendly skincare but didn’t want to deal with complicated websites. TinyCart made it so easy! My store link looks amazing and my customers love the experience." – EcoGlow Store 🌱
+    </div>
+
+   <!-- ...all code above remains unchanged... -->
+
+<div class="container">
+
+    <!-- Product Grid Section (EcoGlow products) -->
+    <h2 id="products">Featured Products</h2>
+    <div class="product-grid">
+        <!-- Product 1 -->
+        <div class="product-card">
+            <img src="{{ url_for('static', filename='images/ecoglowcream.png') }}" alt="EcoGlow Cream/Gel">
+            <div class="product-details">
+                <table>
+                    <tr>
+                        <td><strong>Name:</strong></td>
+                        <td>EcoGlow Cream/Gel</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Price:</strong></td>
+                        <td>₹350</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Quantity:</strong></td>
+                        <td>20 left</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Type:</strong></td>
+                        <td>Natural Moisturizer</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <!-- Product 2 -->
+        <div class="product-card">
+            <img src="{{ url_for('static', filename='images/ecoglowsoap.png') }}" alt="EcoGlow Soap">
+            <div class="product-details">
+                <table>
+                    <tr>
+                        <td><strong>Name:</strong></td>
+                        <td>EcoGlow Soap</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Price:</strong></td>
+                        <td>₹120</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Quantity:</strong></td>
+                        <td>35 left</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Type:</strong></td>
+                        <td>Herbal Cleanser</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <!-- Product 3 -->
+        <div class="product-card">
+            <img src="{{ url_for('static', filename='images/ecoglowfacemask1.png') }}"alt="EcoGlow Face Mask">
+            <div class="product-details">
+                <table>
+                    <tr>
+                        <td><strong>Name:</strong></td>
+                        <td>EcoGlow Face Mask</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Price:</strong></td>
+                        <td>₹220</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Quantity:</strong></td>
+                        <td>18 left</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Type:</strong></td>
+                        <td>Detox & Glow</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <!-- The "+ Add Product" button has been removed from here -->
+
+    <!-- How It Works Section -->
+    <div class="how-it-works" id="how">
+        <h2>How It Works?</h2>
+        <div class="steps-list">
+            <div class="step">
+                <span class="step-icon">🛒</span>
+                <div class="step-title">1. Add Your Products</div>
+                <div class="step-desc">
+                    Click <b>Create Store</b>, fill in product details (name, price, image), and your store name.
+                </div>
+            </div>
+            <div class="step">
+                <span class="step-icon">🔗</span>
+                <div class="step-title">2. Get Your Store Link</div>
+                <div class="step-desc">
+                    Instantly receive a unique store link. Copy and share it with your customers.
+                </div>
+            </div>
+            <div class="step">
+                <span class="step-icon">📲</span>
+                <div class="step-title">3. Share & Sell</div>
+                <div class="step-desc">
+                    Share your store on WhatsApp, Instagram, or email. Customers can view and purchase directly!
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div style="text-align:center;" id="create">
+        <a href="/create-store" class="cta-btn">Create Your Store Now!</a>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer>
+    &lt;&lt;&lt; &copy; VIDHI JAIN &gt;&gt;&gt;
+</footer>
+</body>
+</html>

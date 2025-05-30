@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Store Created – TinyCart</title>
+    <link rel="icon" href="logo.png" type="image/x-icon">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1500&q=80') no-repeat center center fixed;
+            background-size: cover;
+            color: #232f3e;
+            min-height: 100vh;
+            margin: 0;
+        }
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.88);
+            z-index: -1;
+        }
+        .container {
+            max-width: 500px;
+            margin: 4rem auto 2rem auto;
+            background: rgba(255,255,255,0.97);
+            border-radius: 14px;
+            box-shadow: 0 4px 24px rgba(35,47,62,.09);
+            padding: 2.5rem 2rem 2rem 2rem;
+            text-align: center;
+        }
+        h1 {
+            color: #166534;
+            font-size: 2.2rem;
+            margin-bottom: 1rem;
+        }
+        .success {
+            font-size: 1.1rem;
+            color: #232f3e;
+            margin-bottom: 1.5rem;
+        }
+        .store-link-box {
+            background: #fffbe7;
+            border: 2px solid #ffd580;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.2rem 0;
+            font-size: 1.08rem;
+            word-break: break-all;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        .store-link {
+            color: #2563eb;
+            text-decoration: underline;
+            font-weight: bold;
+            flex: 1 1 auto;
+            text-align: left;
+        }
+        .copy-btn {
+            background: #ffa500;
+            color: #232f3e;
+            border: none;
+            border-radius: 20px;
+            padding: 0.4em 1.3em;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .copy-btn:hover {
+            background: #e69500;
+            color: #fff;
+        }
+        .instructions {
+            color: #7d4c00;
+            margin: 1.5rem 0 1.2rem 0;
+            font-size: 1.05rem;
+        }
+        .home-btn {
+            display: inline-block;
+            background: #4ade80;
+            color: #166534;
+            font-weight: bold;
+            font-size: 1.08rem;
+            padding: 0.7em 2em;
+            border: none;
+            border-radius: 30px;
+            text-decoration: none;
+            margin-top: 1.2rem;
+            box-shadow: 0 2px 8px rgba(35,47,62,.08);
+            transition: background 0.2s, color 0.2s, transform 0.15s;
+            cursor: pointer;
+        }
+        .home-btn:hover {
+            background: #22c55e;
+            color: #fff;
+            transform: translateY(-2px) scale(1.04);
+        }
+        .tinycart-footer {
+            text-align: center;
+            padding: 1.1rem 0;
+            background: #232f3e;
+            color: #febd69;
+            font-size: 1.09rem;
+            letter-spacing: 1px;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Store Created! 🎉</h1>
+        <div class="success">Congratulations, your TinyCart store is ready.</div>
+        <div class="instructions">
+            <strong>Share this link with your customers to start selling:</strong>
+        </div>
+        <div class="store-link-box">
+            <a href="{{ full_url }}" class="store-link" id="storeLink" target="_blank">{{ full_url }}</a>
+            <button class="copy-btn" onclick="copyLink()">Copy</button>
+        </div>
+        <a href="/" class="home-btn">Back to Home</a>
+    </div>
+    <div class="tinycart-footer">
+        Made with ❤️ by TinyCart
+    </div>
+    <script>
+        function copyLink() {
+            const url = document.getElementById('storeLink').href;
+            navigator.clipboard.writeText(url).then(function() {
+                alert('Link copied to clipboard!');
+            }, function() {
+                alert('Failed to copy link. Please copy manually.');
+            });
+        }
+    </script>
+</body>
+</html>
