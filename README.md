@@ -37,7 +37,7 @@ Are you a small seller, artist, or student looking to showcase or sell products 
 
 ---
 
-## 📷 Example Use Case
-
-Imagine you sell handmade candles. Just visit the `Add Product` page, upload your product details, and get a store link 
+## 📷 Example Use Case 
+Imagine you sell handmade candles. Just visit the `Add Product` page, upload your product details, and get a store link like
+ 
 
