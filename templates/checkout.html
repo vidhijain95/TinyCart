@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Checkout</title>
+  <style>
+    body{
+      font-family:'Segoe UI',Arial;
+      background:linear-gradient(90deg,#232f3e 65%,#febd69 100%);
+      text-align:center;padding:40px;margin:0
+    }
+    .card{
+      background:#fffbe7;border:2px solid #ffd580;border-radius:14px;
+      padding:30px 25px;display:inline-block;box-shadow:0 4px 24px rgba(255,186,58,.1);
+      max-width:420px;width:100%
+    }
+    h2{margin-bottom:12px;color:#232f3e;font-size:1.7rem}
+    h2 span{color:#ffa500}
+    p{margin-bottom:1.2rem;font-size:1.05rem;color:#333}
+    input,select{
+      margin:8px 0;padding:10px 12px;width:90%;border:1px solid #ccc;
+      border-radius:6px;font-size:1rem
+    }
+    button{
+      padding:10px 18px;margin-top:14px;border:none;border-radius:6px;
+      background:#ffa500;color:#232f3e;font-size:1rem;cursor:pointer;transition:.3s}
+    button:hover{background:#e69500;color:#fff}
+  </style>
+</head>
+<body>
+  <div class="card">
+    {% if not is_cart %}
+      <h2>Checkout for <span>{{ product_name }}</span></h2>
+      <p>Quantity: {{ qty }} &nbsp;|&nbsp; Total: ₹{{ total }}</p>
+    {% else %}
+      <h2>Your Cart Total</h2>
+      <p>Total to Pay: ₹{{ total }}</p>
+    {% endif %}
+
+    <form action="{{ url_for('payment_options') }}" method="POST">
+      <input type="hidden" name="store_id"   value="{{ store_id }}">
+      <input type="hidden" name="product_id" value="{{ product_id }}">
+      <input type="hidden" name="qty"        value="{{ qty }}">
+
+      <input type="text"  name="customer_name"  placeholder="Your Name" required>
+       
+<input type="email" name="customer_email" placeholder="Your Email" required>
+
+      <input type="tel"   name="customer_phone" placeholder="Mobile (10 digits)"
+             pattern="[0-9]{10}" required>
+      <input type="hidden" name="order_id" value="{{ order_id }}"> 
+      <input type="text"  name="address"        placeholder="Delivery Address" required>
+
+      <select name="pay_mode" required>
+        <option value="">Payment method…</option>
+        <option value="cod">Cash on Delivery</option>
+        <option value="online">Pay Online (UPI QR)</option>
+      </select>
+
+      <button type="submit">Proceed</button>
+    </form>
+  </div>
+</body>
+</html>

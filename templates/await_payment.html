@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Waiting for payment…</title>
+
+  <!-- ✨  GLOBAL STYLES  -->
+  <style>
+    /* Reset / base */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* Page background + typography */
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(90deg, #fef8e7 0%, #f5f6fa 100%);
+      color: #232f3e;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items:       center;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* Card */
+    .payment-box {
+      background: #fff;
+      border: 2px solid #ffd580;           /* same accent colour */
+      border-radius: 14px;
+      padding: 2.5rem 3rem;
+      max-width: 520px;
+      box-shadow: 0 6px 24px rgba(255,186,58, 0.15);
+    }
+
+    /* QR image */
+    .payment-box img {
+      width: 280px;
+      height: 280px;
+      object-fit: contain;
+      border-radius: 10px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+      margin-top: 1rem;
+    }
+
+    /* Headings & copy */
+    .payment-box h2 {
+      font-size: 1.9rem;
+      color: #e67e22;                      /* orange accent */
+      margin-bottom: 0.75rem;
+    }
+    .payment-box p {
+      font-size: 1.1rem;
+      color: #444;
+      margin: 0.9rem 0;
+    }
+    .payment-box strong {
+      color: #232f3e;
+    }
+
+    /* Optional “Back to shop” link */
+    .payment-box a.back-link {
+      display: inline-block;
+      margin-top: 1.6rem;
+      padding: 10px 22px;
+      background: #ffa500;
+      color: #fff;
+      text-decoration: none;
+      font-weight: bold;
+      border-radius: 8px;
+      transition: background 0.18s ease;
+    }
+    .payment-box a.back-link:hover {
+      background: #e69500;
+    }
+  </style>
+
+  <!-- 🔄  POLLING SCRIPT  -->
+  <script>
+    const oid = "{{ order_id }}";
+    async function poll() {
+      try {
+        const r  = await fetch("/order-status/" + oid);
+        const js = await r.json();
+
+        if (js.status === "paid") {
+          location.href = "/order-done/" + oid;
+        } else if (js.status === "cancelled") {
+          location.href = "/order-cancelled/" + oid;
+        } else {
+          setTimeout(poll, 4000);   // keep waiting
+        }
+      } catch (e) {
+        console.error("Polling error:", e);
+        setTimeout(poll, 6000);     // retry on error
+      }
+    }
+    window.onload = poll;
+  </script>
+</head>
+
+<body>
+  <div class="payment-box">
+    <h2>Waiting for payment…</h2>
+    <p>Keep this tab open. Your order will confirm as soon as the seller marks your payment.</p>
+
+    {% if qr_file %}
+      <img src="{{ url_for('static', filename='images/' + qr_file) }}" alt="QR">
+    {% else %}
+      <img src="data:image/png;base64,{{ qr }}" alt="QR">
+    {% endif %}
+
+    <p><strong>Amount:</strong> ₹{{ '%.2f'|format(amount) }}</p>
+
+    <!-- Optional link back to shop/home -->
+    <!-- <a class="back-link" href="{{ url_for('home') }}">← Continue shopping</a> -->
+  </div>
+</body>
+</html>

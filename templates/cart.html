@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Your Cart</title>
+  <style>
+    /* ——— Global look, matches store page ——— */
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:'Segoe UI',Arial,sans-serif;
+      color:#232f3e;
+      min-height:100vh;
+      background:linear-gradient(90deg,#232f3e 65%,#febd69 100%);
+      display:flex;align-items:flex-start;justify-content:center;
+      padding:60px 10px
+    }
+    /* white card container */
+    .cart-card{
+      width:100%;
+      max-width:1050px;
+      background:#fff;
+      border-radius:16px;
+      box-shadow:0 8px 28px rgba(0,0,0,.08);
+      padding:32px 26px;
+    }
+    h2{
+      font-size:1.9rem;
+      margin-bottom:26px;
+      text-align:center;
+    }
+    /* table */
+    table{width:100%;border-collapse:collapse;margin-bottom:28px}
+    th,td{padding:12px;border-bottom:1px solid #e5e7eb;text-align:center}
+    th{background:#fffbe7;color:#444;font-weight:600}
+    tfoot td{background:#fffbe7;font-weight:bold;font-size:1.05rem}
+    /* image thumb */
+    img.thumb{width:60px;height:60px;object-fit:cover;border:1px solid #ffd580;
+              border-radius:8px;background:#fffbe7}
+    /* quantity input */
+    input[type=number]{width:68px;padding:6px;border:1px solid #ccc;border-radius:6px}
+    /* buttons */
+    .btn{padding:8px 18px;border:none;border-radius:6px;font-size:.9rem;cursor:pointer;
+         text-decoration:none;display:inline-block;transition:.2s}
+    .update{background:#ffa500;color:#232f3e}.update:hover{background:#e69500;color:#fff}
+    .remove{background:#ff6666;color:#fff}.remove:hover{background:#e04c4c}
+    /* flex wrapper for action buttons */
+    .actions{display:flex;gap:18px;justify-content:center;flex-wrap:wrap}
+    /* empty cart box */
+    .empty{
+      background:#fffbe7;border:2px solid #ffd580;border-radius:14px;
+      padding:28px;max-width:520px;margin:0 auto 30px auto;font-size:1.15rem
+    }
+  </style>
+</head>
+<body>
+
+<div class="cart-card">
+  <h2>Your Cart</h2>
+
+  {% if not items %}
+    <div class="empty">
+      🛒 Your cart is empty.<br><br>
+      <a href="{{ url_for('view_store', store_id=store_id) }}" class="btn update">
+        ← Start shopping
+      </a>
+    </div>
+  {% else %}
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Product</th>
+          <th>Qty</th>
+          <th>Price</th>
+          <th>Subtotal</th>
+          <th></th>
+        </tr>
+      </thead>
+
+      <tbody>
+      {% for i in items %}
+        <tr>
+          <!-- thumbnail -->
+          <td><img class="thumb"
+                   src="{{ url_for('static', filename='images/' ~ i.img) }}"></td>
+
+          <!-- name -->
+          <td>{{ i.name }}</td>
+
+          <!-- quantity + update -->
+          <td>
+            <form action="{{ url_for('update_cart') }}" method="POST" style="display:inline">
+              <input type="hidden" name="store_id"   value="{{ store_id }}">
+              <input type="hidden" name="product_id" value="{{ i.pid }}">
+              <input type="number" name="qty" value="{{ i.qty }}"
+                     min="1" max="{{ i.stock }}" required>
+              <button class="btn update" type="submit">Update</button>
+            </form>
+          </td>
+
+          <td>₹{{ i.price }}</td>
+          <td>₹{{ i.subtotal }}</td>
+
+          <!-- delete -->
+          <td>
+            <a class="btn remove"
+               href="{{ url_for('remove_from_cart', store_id=store_id, pid=i.pid) }}">🗑</a>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+
+      <tfoot>
+        <tr>
+          <td colspan="4">Grand Total</td>
+          <td>₹{{ total }}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="actions">
+      <form action="{{ url_for('checkout_cart') }}" method="POST">
+        <input type="hidden" name="store_id" value="{{ store_id }}">
+        <button class="btn update" style="font-size:1rem">Proceed to Payment</button>
+      </form>
+
+      <a class="btn update"
+         href="{{ url_for('view_store', store_id=store_id) }}">← Continue shopping</a>
+    </div>
+  {% endif %}
+</div>
+
+</body>
+</html>

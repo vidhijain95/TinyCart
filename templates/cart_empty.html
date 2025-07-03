@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Your Cart is Empty</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(90deg, #fef8e7, #f5f6fa);
+      color: #232f3e;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+    }
+    .empty-box {
+      background: #fff;
+      border: 2px solid #ffd580;
+      border-radius: 14px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 6px 24px rgba(255,186,58, 0.15);
+    }
+    .empty-box h2 {
+      font-size: 1.8rem;
+      color: #e67e22;
+      margin-bottom: 0.5rem;
+    }
+    .empty-box p {
+      font-size: 1.1rem;
+      color: #444;
+    }
+    .empty-box a {
+      display: inline-block;
+      margin-top: 1.5rem;
+      padding: 10px 20px;
+      background: #ffa500;
+      color: #fff;
+      text-decoration: none;
+      font-weight: bold;
+      border-radius: 8px;
+      transition: 0.2s ease;
+    }
+    .empty-box a:hover {
+      background: #e69500;
+    }
+  </style>
+</head>
+<body>
+  <div class="empty-box">
+    <h2>Your cart is empty 🛒</h2>
+    <p>Looks like you haven’t added anything yet.</p>
+    <a href="{{ url_for('view_store', store_id=store_id) }}">← Continue Shopping</a>
+  </div>
+</body> 
+</html>

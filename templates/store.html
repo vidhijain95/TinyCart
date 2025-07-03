@@ -1,181 +1,161 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>{{ store_name }}</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <link rel="icon" href="/static/logo.png" type="image/x-icon">
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: #f5f6fa;
-            color: #232f3e;
-            min-height: 100vh;
-        }
-        .store-header {
-            background: linear-gradient(90deg, #232f3e 65%, #febd69 100%);
-            color: #fff;
-            padding: 2.5rem 1rem 2rem 1rem;
-            text-align: center;
-        }
-        .store-header h1 {
-            font-size: 2.4rem;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-        }
-        .store-header p {
-            font-size: 1.15rem;
-            color: #ffe8b3;
-        }
-        .container {
-            max-width: 1100px;
-            margin: -2rem auto 2rem auto;
-            background: #fff;
-            border-radius: 14px;
-            box-shadow: 0 4px 24px rgba(35,47,62,.09);
-            padding: 2.5rem 2rem 2rem 2rem;
-        }
-        .products-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 32px;
-            justify-content: center;
-            margin-bottom: 2.5rem;
-        }
-        .product-card {
-            background: #f8fafc;
-            border: 2px solid #ffd580;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(255,186,58,0.07);
-            width: 270px;
-            padding: 1.2rem 1rem 1.2rem 1rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            transition: 0.25s;
-            position: relative;
-        }
-        .product-card:hover {
-            border-color: #ffa500;
-            box-shadow: 0 4px 20px rgba(255,186,58,0.13);
-            transform: translateY(-3px) scale(1.03);
-        }
-        .product-img {
-            width: 100%;
-            height: 170px;
-            object-fit: cover;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            background: #fffbe7;
-            border: 1px solid #ffd580;
-        }
-        .product-card h3 {
-            font-size: 1.18rem;
-            color: #232f3e;
-            margin-bottom: 0.4rem;
-            text-align: center;
-        }
-        .product-desc {
-            color: #555;
-            font-size: 1.02rem;
-            margin-bottom: 0.5rem;
-            text-align: center;
-        }
-        .product-price {
-            color: #ffa500;
-            font-weight: bold;
-            font-size: 1.1rem;
-            margin-bottom: 0.4rem;
-        }
-        .product-qty {
-            color: #c0392b;
-            font-size: 1.04rem;
-            margin-bottom: 0.3rem;
-            font-weight: bold;
-        }
-        .hurry {
-            color: #e74c3c;
-            font-size: 0.98rem;
-            margin-bottom: 0.5rem;
-            font-style: italic;
-        }
-        .owner-contact {
-            background: #fffbe7;
-            border-left: 5px solid #ffd580;
-            border-radius: 7px;
-            padding: 1.2rem 1.5rem;
-            margin: 2rem 0 1rem 0;
-            font-size: 1.07rem;
-            color: #232f3e;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .owner-contact strong {
-            color: #ffa500;
-        }
-        .tinycart-footer {
-            text-align: center;
-            padding: 1.1rem 0;
-            background: #232f3e;
-            color: #febd69;
-            font-size: 1.09rem;
-            letter-spacing: 1px;
-            margin-top: 2rem;
-        }
-        @media (max-width: 900px) {
-            .container {
-                padding: 1.5rem 0.5rem;
-            }
-            .products-grid {
-                gap: 18px;
-            }
-        }
-        @media (max-width: 600px) {
-            .store-header {
-                padding: 1.5rem 0.5rem 1.2rem 0.5rem;
-            }
-            .container {
-                padding: 1rem 0.2rem;
-            }
-            .products-grid {
-                flex-direction: column;
-                align-items: center;
-            }
-            .product-card {
-                width: 100%;
-                max-width: 340px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>{{ store_name }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="{{ url_for('static', filename='logo.png') }}">
+  <style>
+    * {box-sizing: border-box; margin: 0; padding: 0;}
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f5f6fa; color: #232f3e; min-height: 100vh;
+    }
+
+    .store-header {
+      background: linear-gradient(90deg, #232f3e 65%, #febd69 100%);
+      color: #fff; padding: 2.4rem 1rem 2rem; text-align: center;
+    }
+    .store-header h1 {font-size: 2.2rem; font-weight: 700; margin-bottom: .4rem;}
+    .store-header p {font-size: 1.05rem; color: #ffe8b3;}
+
+    .cart-btn {
+      position: fixed; top: 18px; right: 20px;
+      background: #ffa500; color: #232f3e;
+      padding: 10px 16px; border-radius: 30px;
+      text-decoration: none; font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0,0,0,.1); transition: .2s;
+    }
+    .cart-btn:hover {background: #e69500; color: #fff;}
+
+    .container {
+      max-width: 1100px; margin: -2rem auto 2rem;
+      background: #fff; border-radius: 14px;
+      box-shadow: 0 4px 24px rgba(35,47,62,.09);
+      padding: 2.4rem 2rem;
+    }
+
+    .products-grid {
+      display: flex; flex-wrap: wrap; gap: 32px;
+      justify-content: center; margin-bottom: 2.5rem;
+    }
+    .product-card {
+      background: #f8fafc; border: 2px solid #ffd580; border-radius: 12px;
+      box-shadow: 0 2px 9px rgba(255,186,58,.07); width: 270px;
+      padding: 1.2rem 1rem; display: flex; flex-direction: column; align-items: center;
+      transition: .25s;
+    }
+    .product-card:hover {
+      border-color: #ffa500; box-shadow: 0 4px 20px rgba(255,186,58,.13);
+      transform: translateY(-3px) scale(1.03);
+    }
+
+    .product-img {
+      width: 100%; height: 170px; object-fit: cover;
+      border-radius: 8px; margin-bottom: 1rem;
+      background: #fffbe7; border: 1px solid #ffd580;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .95rem; color: #888;
+    }
+
+    .product-card h3 {
+      font-size: 1.14rem; margin-bottom: .35rem; text-align: center;
+    }
+    .product-desc {
+      color: #555; font-size: .96rem; margin-bottom: .5rem; text-align: center;
+    }
+    .product-price {
+      color: #ffa500; font-weight: 700; font-size: 1.05rem; margin-bottom: .35rem;
+    }
+    .product-qty {
+      color: #c0392b; font-size: .98rem; font-weight: 600; margin-bottom: .35rem;
+    }
+
+    .buy-form {
+      margin-top: .6rem; display: flex; gap: 6px; align-items: center;
+    }
+    .buy-form input[type=number] {
+      width: 60px; padding: 4px;
+    }
+    .buy-form button {
+      padding: 6px 12px; background: #ffa500; color: #232f3e;
+      border: none; border-radius: 6px; cursor: pointer; transition: .2s;
+    }
+    .buy-form button:hover {background: #e69500; color: #fff;}
+
+    .owner-contact {
+      background: #fffbe7; border-left: 5px solid #ffd580; border-radius: 7px;
+      padding: 1.2rem 1.5rem; margin: 2rem auto 1rem;
+      font-size: 1.04rem; max-width: 600px;
+    }
+    .owner-contact strong {color: #ffa500;}
+
+    .tinycart-footer {
+      text-align: center; padding: 1.05rem 0;
+      background: #232f3e; color: #febd69;
+      font-size: 1.05rem; margin-top: 2rem;
+    }
+
+    @media(max-width: 768px){
+      .products-grid {flex-direction: column; gap: 20px;}
+      .product-card {width: 92%; margin: 0 auto;}
+      .store-header h1 {font-size: 1.8rem;}
+      .store-header p {font-size: .95rem;}
+      .container {padding: 1.8rem 1rem;}
+      .buy-form {flex-direction: column; align-items: stretch;}
+      .buy-form input[type=number], .buy-form button {width: 100%;}
+      .cart-btn {top: 12px; right: 12px; padding: 8px 12px; font-size: .9rem;}
+    }
+  </style>
 </head>
+
 <body>
-    <div class="store-header">
-        <h1>{{ store_name }}</h1>
-        <p>{{ store_description }}</p>
+<a href="{{ url_for('view_cart', store_id=store_id) }}" class="cart-btn">🛒 View Cart</a>
+
+<div class="store-header">
+  <h1>{{ store_name }}</h1>
+  <p>{{ store_description }}</p>
+</div>
+
+<div class="container">
+  <h2 style="text-align:center;margin-bottom:1.4rem">Products</h2>
+
+  <div class="products-grid">
+    {% for p in products %}
+    <div class="product-card">
+      {% if p[11] %}
+        <img src="{{ url_for('static', filename='images/' ~ p[11]) }}" class="product-img" alt="Product">
+      {% else %}
+        <div class="product-img">No Image</div>
+      {% endif %}
+
+      <h3>{{ p[7] }}</h3>
+      <div class="product-desc">{{ p[8] }}</div>
+      <div class="product-price">₹{{ p[9] }}</div>
+
+      {% if p[10] > 0 %}
+        <div class="product-qty">Quantity left: {{ p[10] }}</div>
+        <form action="{{ url_for('add_to_cart') }}" method="POST" class="buy-form">
+          <input type="hidden" name="store_id" value="{{ store_id }}">
+          <input type="hidden" name="product_id" value="{{ loop.index0 }}">
+          <label>Qty:</label>
+          <input type="number" name="qty" value="1" min="1" max="{{ p[10] }}" required>
+          <button type="submit">Add to Cart</button>
+        </form>
+      {% else %}
+        <div class="product-qty" style="color:#e04c4c">Sold Out</div>
+      {% endif %}
     </div>
-    <div class="container">
-        <h2 style="text-align:center; color:#232f3e; margin-bottom:1.5rem;">Products</h2>
-        <div class="products-grid">
-            {% for p in products %}
-            <div class="product-card">
-                <img src="{{ p[8] }}" alt="Product Image" class="product-img">
-                <h3>{{ p[4] }}</h3>
-                <div class="product-desc">{{ p[5] }}</div>
-                <div class="product-price">₹{{ p[6] }}</div>
-                <div class="product-qty">Quantity left: {{ p[7] }}</div>
-                <div class="hurry">Hurry up! Only {{ p[7] }} left</div>
-            </div>
-            {% endfor %}
-        </div>
-        <div class="owner-contact">
-            <strong>Store Owner Contact:</strong><br>
-            Email: <a href="mailto:{{ owner_email }}" style="color:#2563eb; text-decoration:underline;">{{ owner_email }}</a>
-        </div>
-    </div>
-    <div class="tinycart-footer">
-        Made with ❤️ by TinyCart
-    </div>
+    {% endfor %}
+  </div>
+
+  <div class="owner-contact">
+    <strong>Store Owner:</strong><br>
+    Email: <a href="mailto:{{ owner_email }}">{{ owner_email }}</a><br>
+    Phone: <a href="tel:+91{{ owner_phone }}">+91 {{ owner_phone }}</a>
+  </div>
+</div>
+
+<div class="tinycart-footer">Made with ❤️ by TinyCart</div>
 </body>
 </html>

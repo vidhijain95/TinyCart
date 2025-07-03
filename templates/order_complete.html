@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Order Confirmation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(90deg, #232f3e 65%, #febd69 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .confirmation-box {
+      background: #fffbe7;
+      border: 2px solid #ffd580;
+      border-radius: 14px;
+      padding: 2rem 2.5rem;
+      box-shadow: 0 4px 20px rgba(255, 186, 58, 0.1);
+      text-align: center;
+      max-width: 400px;
+    }
+    .confirmation-box h2 {
+      color: #27ae60;
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+    }
+    .confirmation-box p {
+      font-size: 1.1rem;
+      color: #333;
+      margin: 0.5rem 0;
+    }
+    .confirmation-box a {
+      display: inline-block;
+      margin-top: 1.5rem;
+      text-decoration: none;
+      color: #232f3e;
+      background-color: #ffa500;
+      padding: 0.6rem 1.2rem;
+      border-radius: 6px;
+      transition: 0.3s;
+    }
+    .confirmation-box a:hover {
+      background-color: #e69500;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="confirmation-box">
+      <h2>✅ {{ message }}</h2>
+      {% if pname == 'your cart items' %}
+    <p>You ordered <strong>{{ qty }} item{{ '' if qty==1 else 's' }}</strong></p>
+  {% else %}
+    <p><strong>{{ pname }}</strong> × {{ qty }}</p>
+  {% endif %}
+
+    <a href="{{ url_for('view_store', store_id=store_id) }}">← Back to Store</a>
+  </div>
+</body>
+</html>

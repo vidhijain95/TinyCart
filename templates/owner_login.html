@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Owner Login</title>
+<style>
+body{font-family:Segoe UI,Arial;text-align:center;background:#f5f6fa;padding:40px}
+form{display:inline-block;background:#fff;padding:30px 40px;border-radius:12px;
+     box-shadow:0 4px 20px rgba(0,0,0,.08)}
+input{padding:8px 10px;margin-bottom:14px;border:1px solid #ccc;border-radius:6px}
+button{padding:8px 18px;border:none;border-radius:6px;background:#ffa500;color:#232f3e;
+       cursor:pointer}button:hover{background:#e69500;color:#fff}
+</style></head><body>
+  <h2>Owner login – store {{ store_id or '[id]' }}</h2>
+  <form method="POST">
+    <input type="hidden" name="store_id" value="{{ store_id }}">
+    <input type="password" name="pin" placeholder="4‑6 digit PIN" pattern="\d{4,6}" required><br>
+    <button type="submit">Log in</button>
+  </form>
+  <!-- Add this inside <body> just below the form -->
+ 
+  
+ 
+
+<p style="margin-top:12px">
+<a href="{{ url_for('forgot_pin') }}">Forgot PIN?</a>
+
+</p>
+
+  </a>
+</p>
+
+  {% with m=get_flashed_messages() %}
+    {% if m %}<p style="color:#e04c4c">{{ m[0] }}</p>{% endif %}
+  {% endwith %}
+</body></html>

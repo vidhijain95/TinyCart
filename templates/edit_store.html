@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Edit Store – TinyCart</title>
+  <link rel="icon" href="logo.png" type="image/x-icon" />
+
+  <!-- same CSS you use everywhere -->
+  <style>
+    .flash-area{margin-bottom:1rem;text-align:center}
+    .flash.error{display:inline-block;background:#fee2e2;color:#b91c1c;
+                 padding:8px 16px;border-radius:8px;font-weight:600}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI',Arial,sans-serif;color:#232f3e;
+         background:url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1500&q=80')
+         no-repeat center/cover fixed;min-height:100vh;}
+    body::before{content:"";position:fixed;inset:0;background:rgba(255,255,255,.88);z-index:-1}
+    nav{position:sticky;top:0;width:100%;z-index:100;background:rgba(35,47,62,.85);
+        backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;
+        height:64px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+    .navbar-content{width:100%;max-width:1200px;display:flex;align-items:center;
+                    justify-content:space-between;padding:0 2rem}
+    .logo{display:flex;align-items:center;gap:12px}
+    .logo img{height:38px}
+    .logo span{font-size:1.5rem;font-weight:bold;color:#febd69;letter-spacing:2px}
+    .nav-links a{color:#fff;text-decoration:none;margin-left:2rem;font-size:1.07rem;position:relative;transition:color .2s}
+    .nav-links a:hover,.nav-links a.active{color:#febd69}
+    .nav-links a::after{content:'';display:block;width:0;height:2px;background:#febd69;transition:width .3s;position:absolute;left:0;bottom:-4px}
+    .nav-links a:hover::after,.nav-links a.active::after{width:100%}
+    .container{max-width:900px;margin:2rem auto;background:rgba(255,255,255,.97);
+               border-radius:14px;box-shadow:0 4px 24px rgba(35,47,62,.09);padding:2.5rem 2rem}
+    h1{font-size:2rem;color:#232f3e;margin-bottom:1.2rem;text-align:center}
+    .section-title{font-size:1.3rem;color:#ffa500;margin-bottom:.8rem;font-weight:bold}
+    label{font-size:1.05rem;font-weight:500;margin-bottom:.3rem;display:block;text-align:left;color:#232f3e}
+    input[type=text],input[type=number],input[type=email],input[type=tel],input[type=file]{
+        width:100%;padding:.7em 1em;border:2px solid #ffd580;border-radius:8px;font-size:1.05rem;
+        margin-bottom:1rem;background:#fffbe7;color:#232f3e;outline:none;transition:border .2s}
+    input:focus{border-color:#ffa500}
+    hr{border:none;border-top:2px solid #ffd580;margin:1.5rem 0}
+    .product-card{background:#f8fafc;border:2px solid #ffd580;border-radius:10px;
+                  box-shadow:0 2px 10px rgba(255,186,58,.06);padding:1.3rem;margin-bottom:1.5rem}
+    .product-card h2{color:#166534;font-size:1.2rem;margin-bottom:1rem}
+    .form-actions{display:flex;gap:1.2rem;justify-content:flex-end;margin-top:2rem}
+    .cta-btn{background:#ffa500;color:#232f3e;font-weight:bold;font-size:1.1rem;
+             padding:.7em 2em;border:none;border-radius:30px;text-decoration:none;
+             box-shadow:0 2px 8px rgba(35,47,62,.08);cursor:pointer;transition:background .2s,color .2s,transform .15s}
+    .cta-btn:hover{background:#e69500;color:#fff;transform:translateY(-2px) scale(1.04)}
+  </style>
+</head>
+<body>
+<nav>
+  <div class="navbar-content">
+      <div class="logo">
+          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="TinyCart">
+          <span>TinyCart</span>
+      </div>
+      <div class="nav-links">
+          <a href="/">Home</a>
+          <a href="/how-it-works">How it Works</a>
+          <a class="active" href="#">Edit Store</a>
+      </div>
+  </div>
+</nav>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-area">
+      {% for cat,msg in messages %}
+        <div class="flash {{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<div class="container">
+  <h1>Edit Your Store</h1>
+
+  <!-- ───── dropdown: choose how many blank cards ───── -->
+  <form style="margin-bottom:1rem"
+        method="get"
+        action="{{ url_for('edit_store', store_id=store_id) }}">
+    <label><strong>How many NEW products to add?</strong></label>
+    <select name="add_count" onchange="this.form.submit()">
+      {% for n in range(0, 11) %}
+        <option value="{{ n }}" {% if n == add_count %}selected{% endif %}>{{ n }}</option>
+      {% endfor %}
+    </select>
+  </form>
+
+  <!-- ───── main POST form ───── -->
+  <form action="{{ url_for('update_store') }}" method="POST" enctype="multipart/form-data">
+
+    <!-- ===== Store section ===== -->
+    <div class="section-title">Store Details</div>
+
+    <label>Store Name:</label>
+    <input type="text" name="storename" value="{{ store[0] }}" required>
+
+    <label>Owner Mobile (+91…):</label>
+    <input type="tel" name="owner_phone" value="{{ store[3] }}" pattern="[0-9]{10}" required>
+
+    <label>Owner Email:</label>
+    <input type="email" name="email" value="{{ store[2] }}" required>
+
+    <label>Store Description:</label>
+    <input type="text" name="description" value="{{ store[1] }}" required>
+
+    <label>Upload / Replace Store QR:</label>
+    <input type="file" name="qr_img" accept="image/*">
+
+    <hr>
+
+    <!-- ===== Existing products ===== -->
+    <div class="section-title">Existing Products</div>
+
+    {% for p in products %}
+    <div class="product-card">
+      <h2>Product {{ loop.index }}</h2>
+
+      <input type="hidden" name="product_id[]"  value="{{ p[0] }}">
+      <input type="hidden" name="current_img[]" value="{{ p[5] }}">
+
+      <label>Name:</label>
+      <input type="text" name="pname[]" value="{{ p[1] }}" required>
+
+      <label>Description:</label>
+      <input type="text" name="pd[]" value="{{ p[2] }}" required>
+
+      <label>Quantity:</label>
+      <input type="number" name="pq[]" value="{{ p[3] }}" min="0" required>
+
+      <label>Price (₹):</label>
+      <input type="number" name="pp[]" value="{{ '%.2f' | format(p[4]) }}" step="0.01" min="0" required>
+
+      <label>Replace Image (optional):</label>
+      <input type="file" name="pi[]" accept="image/*">
+    </div>
+    {% endfor %}
+
+    <!-- ===== New products ===== -->
+    <hr>
+    <div class="section-title">Add New Products</div>
+
+    {% for i in range(add_count) %}
+    <div class="product-card">
+      <h2>New Product {{ i+1 }}</h2>
+
+      <input type="hidden" name="product_id[]"  value="">
+      <input type="hidden" name="current_img[]" value="">
+
+      <label>Name:</label>
+      <input type="text" name="pname[]" placeholder="Product name">
+
+      <label>Description:</label>
+      <input type="text" name="pd[]" placeholder="Product description">
+
+      <label>Quantity:</label>
+      <input type="number" name="pq[]" min="0" placeholder="0">
+
+      <label>Price (₹):</label>
+      <input type="number" name="pp[]" step="0.01" min="0" placeholder="0.00">
+
+      <label>Image:</label>
+      <input type="file" name="pi[]" accept="image/*">
+    </div>
+    {% endfor %}
+
+    <div class="form-actions">
+      <button type="submit" class="cta-btn">Update Store</button>
+    </div>
+  </form>
+</div>
+
+<footer style="text-align:center;padding:1rem 0;color:#febd69;background:#232f3e">
+  &lt;&lt;&lt; &copy; VIDHI JAIN &gt;&gt;&gt;
+</footer>
+</body>
+</html>

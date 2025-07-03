@@ -6,6 +6,18 @@
     <title>Add Product Details – TinyCart</title>
     <link rel="icon" href="logo.png" type="image/x-icon">
     <style>
+       
+        .flash-area{margin-bottom:1rem;text-align:center}
+        .flash.error{
+        display:inline-block;
+        background:#fee2e2;
+        color:#b91c1c;
+        padding:8px 16px;
+        border-radius:8px;
+        font-weight:600;
+        }
+        
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
@@ -115,18 +127,19 @@
             display: block;
             text-align: left;
         }
-        input[type="text"], input[type="number"], input[type="email"], input[type="url"] {
-            width: 100%;
-            padding: 0.7em 1em;
-            border: 2px solid #ffd580;
-            border-radius: 8px;
-            font-size: 1.05rem;
-            margin-bottom: 1rem;
-            background: #fffbe7;
-            color: #232f3e;
-            outline: none;
-            transition: border 0.2s;
-        }
+        input[type="text"], input[type="number"], input[type="email"], input[type="url"], input[type="tel"],input[type="password"] {
+        width: 100%;
+        padding: 0.7em 1em;
+        border: 2px solid #ffd580;
+        border-radius: 8px;
+        font-size: 1.05rem;
+        margin-bottom: 1rem;
+        background: #fffbe7;
+        color: #232f3e;
+        outline: none;
+        transition: border 0.2s;
+}
+
         input:focus {
             border-color: #ffa500;
         }
@@ -247,7 +260,15 @@
             </div>
         </div>
     </nav>
-
+ {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-area">
+        {% for cat, msg in messages %}
+          <div class="flash {{ cat }}">{{ msg }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
     <div class="container">
         <h1>Create Your Store</h1>
         <div class="info">
@@ -257,16 +278,30 @@
                 <li>Click "Save Progress" to keep your work safe before submitting.</li>
             </ul>
         </div>
-        <form method="POST" action="/submit-store" id="storeForm" autocomplete="off">
+        <form method="POST" action="/submit-store" enctype="multipart/form-data" id="storeForm" autocomplete="off">
+
             <div class="section-title">Store Details</div>
             <label for="storename">Store Name:</label>
             <input type="text" id="storename" name="storename" placeholder="Enter your store name" required>
+            <label for="owner_phone">Owner Mobile (+91…):</label>
+            <input type="tel" id="owner_phone" name="owner_phone" pattern="[0-9]{10}" placeholder="Enter owner mobile number" required>
+
 
             <label for="email">Owner Email:</label>
             <input type="email" id="email" name="email" placeholder="Enter owner email" required>
+            
+            
 
             <label for="description">Store Description:</label>
             <input type="text" id="description" name="description" placeholder="Enter store description" required>
+            <label for="owner_pin">Owner Pin:</label>
+            <input type="password" name="owner_pin" pattern="\d{6}" title="4 digits" placeholder="Enter 6 Digit PIN"required>
+
+
+            <label>Upload UPI QR (PNG/JPG):</label>
+            <input type="file" name="qr_img" accept="image/*">
+            
+
             <hr>
             <div class="section-title">Product Details</div>
             <div class="products-section" id="productsSection">
@@ -274,22 +309,30 @@
                 <div class="product-card" data-index="{{i}}">
                     <button type="button" class="remove-btn" title="Remove this product" onclick="removeProduct(this)">&times;</button>
                     <h2>Product {{i+1}}</h2>
-                    <label>Product Name:</label>
-                    <input type="text" name="pname[]" placeholder="Enter product name" required>
-                    <label>Product Description:</label>
-                    <input type="text" name="pd[]" placeholder="Enter product description" required>
-                    <label>Product Quantity:</label>
-                    <input type="number" name="pq[]" min="1" placeholder="Enter product quantity" required>
-                    <label>Product Price (₹):</label>
-                    <input type="number" name="pp[]" min="0" step="0.01" placeholder="Enter product price" required>
-                    <label>Product Image URL:</label>
-                    <input type="url" name="pi[]" placeholder="Enter image URL" required>
+                  <label>Product Name:</label>
+<input type="text" name="pname[]" placeholder="Enter product name" required>
+
+<label>Product Description:</label>
+<input type="text" name="pd[]" placeholder="Enter product description" required>
+
+<label>Product Quantity:</label>
+<input type="number" name="pq[]" min="1" placeholder="Enter product quantity" required>
+
+<label>Product Price (₹):</label>
+<input type="number" name="pp[]" min="0" step="0.01" placeholder="Enter product price" required>
+
+<label>Upload Product Image:</label>
+<input type="file" name="pi[]" accept="image/*" capture="environment" required>
+
+
                 </div>
                 {% endfor %}
             </div>
             <div class="form-actions">
                 <button type="button" class="save-btn" onclick="saveProgress()">Save Progress</button>
                 <button type="submit" class="cta-btn">Create Store</button>
+                 <!-- 🔽 Add this block here -->
+ 
             </div>
         </form>
     </div>
@@ -343,6 +386,7 @@
                 }
             }
         }
+        
     </script>
 </body>
 </html>

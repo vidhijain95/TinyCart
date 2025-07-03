@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Forgot PIN – TinyCart</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 50px;
+      text-align: center;
+      color: #333;
+    }
+
+    form {
+      background: #ffffff;
+      padding: 35px 45px;
+      display: inline-block;
+      border-radius: 14px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+      max-width: 400px;
+    }
+
+    h2 {
+      color: #232f3e;
+      margin-bottom: 20px;
+    }
+
+    p.instruction {
+      color: #444;
+      font-size: 15px;
+      margin-bottom: 25px;
+    }
+
+    input, button {
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 15px;
+    }
+
+    button {
+      background: #ffa500;
+      color: #232f3e;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background: #e69500;
+      color: #fff;
+    }
+
+    .error {
+      color: red;
+      margin-top: 15px;
+    }
+
+    .info {
+      color: green;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Reset Your Store PIN</h2>
+
+  <form method="POST">
+    <p class="instruction">
+      Enter your <strong>Store ID</strong> below. A password reset link will be sent to your registered Gmail address.<br>
+      Click the link in the email to set your new PIN securely.
+    </p>
+    <input type="text" name="store_id" placeholder="Enter your Store ID" required>
+    <button type="submit">Send Reset Link</button>
+  </form>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <p class="{{ category }}">{{ message }}</p>
+    {% endfor %}
+  {% endwith %}
+
+</body>
+</html>
