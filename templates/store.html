@@ -111,6 +111,14 @@
 
 <body>
 <a href="{{ url_for('view_cart', store_id=store_id) }}" class="cart-btn">🛒 View Cart</a>
+{% if session.get('customer_email') %}
+  <a href="{{ url_for('customer_dashboard') }}" class="cart-btn" style="top: 66px;">📋 Dashboard</a>
+{% endif %}
+
+
+
+
+
 
 <div class="store-header">
   <h1>{{ store_name }}</h1>

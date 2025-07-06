@@ -4,14 +4,10 @@
 <meta charset="UTF-8">
 <title>Orders – {{ store_id }}</title>
 <style>
-* {
-  box-sizing: border-box;
-}
-
+* { box-sizing: border-box; }
 body {
   font-family: 'Segoe UI', sans-serif;
-  margin: 0;
-  padding: 40px;
+  margin: 0; padding: 40px;
   background: linear-gradient(90deg, #232f3e 65%, #febd69 100%);
   min-height: 100vh;
   color: #2e2e2e;
@@ -19,19 +15,14 @@ body {
 .edit-button-dark {
   display: inline-block;
   padding: 10px 18px;
-  background-color: #232f3e;     /* dark background */
-  color: white;                  /* white text */
-  text-decoration: none;
-  font-weight: bold;
-  border-radius: 8px;
+  background-color: #232f3e;
+  color: white; text-decoration: none;
+  font-weight: bold; border-radius: 8px;
   transition: background-color 0.3s ease;
 }
-
 .edit-button-dark:hover {
-  background-color: #1a222c;     /* slightly darker on hover */
+  background-color: #1a222c;
 }
-
-
 h2 {
   text-align: center;
   color: #febd69;
@@ -39,21 +30,13 @@ h2 {
   margin-bottom: 30px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
-
-/* Table container */
 table {
-  width: 100%;
-  max-width: 1200px;
-  margin: auto;
-  border-collapse: collapse;
-  border-radius: 12px;
+  width: 100%; max-width: 1200px; margin: auto;
+  border-collapse: collapse; border-radius: 12px;
   background-color: #fffbe7;
   box-shadow: 0 4px 16px rgba(35, 47, 62, 0.1);
-  overflow: hidden;
-  font-size: 0.95rem;
+  overflow: hidden; font-size: 0.95rem;
 }
-
-/* Table headers */
 thead {
   background-color: #ffd580;
   color: #232f3e;
@@ -61,50 +44,32 @@ thead {
   font-size: 1rem;
   letter-spacing: 0.05em;
 }
-
 th, td {
   padding: 14px 18px;
   text-align: center;
   border-bottom: 1px solid #fceabb;
   vertical-align: middle;
 }
-
-/* Hover effect */
 tbody tr:hover {
   background-color: #fff4cc;
 }
-
-/* Product thumbnails */
 td.pic {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  flex-wrap: wrap;
+  display: flex; justify-content: center;
+  gap: 6px; flex-wrap: wrap;
 }
-
 td.pic img {
-  width: 42px;
-  height: 42px;
+  width: 42px; height: 42px;
   object-fit: cover;
   border-radius: 6px;
   border: 2px solid #ffd580;
   background-color: #fff;
 }
-
-/* Contact Info */
 .contact-info {
-  text-align: left;
-  font-size: 0.85rem;
-  color: #333;
-  line-height: 1.4;
+  text-align: left; font-size: 0.85rem;
+  color: #333; line-height: 1.4;
   word-break: break-word;
 }
-
-.contact-info small {
-  color: #555;
-}
-
-/* Mode Badge */
+.contact-info small { color: #555; }
 .badge {
   display: inline-block;
   padding: 5px 12px;
@@ -115,102 +80,56 @@ td.pic img {
   background-color: #232f3e;
   color: #ffd580;
 }
+.COD     { background-color: #232f3e; color: #ffd580; }
+.ONLINE  { background-color: #ffc107; color: #232f3e; }
 
-/* COD vs ONLINE */
-.COD {
-  background-color: #232f3e;
-  color: #ffd580;
-}
-
-.ONLINE {
-  background-color: #ffc107;
-  color: #232f3e;
-}
-
-/* Buttons */
 .btn {
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  transition: 0.3s ease;
-  margin: 3px;
+  padding: 8px 16px; border-radius: 8px;
+  font-size: 0.9rem; font-weight: 600;
+  cursor: pointer; border: none;
+  transition: 0.3s ease; margin: 3px;
 }
-
-/* Mark Paid button */
 .btn.mark {
-  background-color: #27ae60;
-  color: #fff;
+  background-color: #27ae60; color: #fff;
 }
-
 .btn.mark:hover:not(.button-disabled) {
   background-color: #219150;
 }
-
-/* Paid */
 .btn.paid {
-  background-color: #2ecc71;
-  color: #fff;
+  background-color: #2ecc71; color: #fff;
   cursor: default;
 }
-
-/* Cancel button */
 .btn.cancel {
-  background-color: #e74c3c;
-  color: #fff;
+  background-color: #e74c3c; color: #fff;
 }
-
 .btn.cancel:hover:not(.button-disabled) {
   background-color: #c0392b;
 }
-
-/* Disabled button */
 .button-disabled {
   background-color: #aaa !important;
   color: #eee !important;
   pointer-events: none;
 }
-
-/* Responsive */
 @media (max-width: 768px) {
-  table, thead, tbody, th, td, tr {
-    display: block;
-  }
-
-  thead {
-    display: none;
-  }
-
+  table, thead, tbody, th, td, tr { display: block; }
+  thead { display: none; }
   tbody tr {
-    margin-bottom: 20px;
-    background: #fffbe7;
-    border-radius: 10px;
-    padding: 12px;
+    margin-bottom: 20px; background: #fffbe7;
+    border-radius: 10px; padding: 12px;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
   }
-
   td {
-    text-align: right;
-    padding-left: 50%;
+    text-align: right; padding-left: 50%;
     position: relative;
   }
-
   td::before {
     content: attr(data-label);
-    position: absolute;
-    left: 16px;
-    top: 12px;
-    font-weight: bold;
-    font-size: 0.75rem;
-    color: #888;
+    position: absolute; left: 16px;
+    top: 12px; font-weight: bold;
+    font-size: 0.75rem; color: #888;
     text-transform: uppercase;
   }
-
-  td.pic {
-    justify-content: flex-start;
-  }
+  td.pic { justify-content: flex-start; }
 }
 </style>
 
@@ -221,10 +140,9 @@ function disableButton(btn) {
     btn.innerText = 'Processing...';
 }
 </script>
-
 </head>
-<body>
 
+<body>
 <h2>Orders for store <span style="color:#ffa500">{{ store_id }}</span></h2>
 
 <table>
@@ -241,9 +159,8 @@ function disableButton(btn) {
   <td data-label="ID">{{ o.id }}</td>
   <td data-label="Total (₹)">{{ "%.2f"|format(o.total) }}</td>
 
-  <!-- product thumbnails -->
   <td class="pic" data-label="Products">
-    {% for p in o.plist %}              {#  ← use .plist, not .items #}
+    {% for p in o.plist %}
        <img src="{{ url_for('static', filename='images/' ~ p.img) }}" alt="Product">
        ×{{ p.qty }}
     {% endfor %}
@@ -258,37 +175,46 @@ function disableButton(btn) {
   </td>
 
   <td data-label="Mode"><span class="badge {{ o.mode }}">{{ o.mode }}</span></td>
-  <td data-label="Status">{{ o.status|capitalize }}</td>
+  <td data-label="Status" style="font-size: 1.3rem;">
+  {% if o.status in ['cancelled-by-customer', 'cancelled-by-owner'] and o.mode == 'ONLINE' %}
+    <form method="post"
+          action="{{ url_for('send_refund_email', store_id=store_id, order_id=o.id) }}"
+          onsubmit="disableButton(this.querySelector('button'))">
+      <button type="submit" class="btn" title="Send refund confirmation">❌</button>
+    </form>
+  {% else %}
+    {{ o.stat_icon }}
+  {% endif %}
+</td>
+
 
   <td data-label="Action">
-    {% if o.status == 'pending' and o.mode == 'ONLINE' %}
+    {% if o.status == 'pending' and o.mode in ['ONLINE', 'COD'] %}
       <form method="post"
             action="{{ url_for('owner_mark_paid', store_id=store_id, order_id=o.id) }}"
             onsubmit="disableButton(this.querySelector('button'))">
         <button type="submit" class="btn mark">Mark Paid</button>
       </form>
     {% elif o.status == 'paid' %}
-        <span class="btn paid">Paid</span>
+      <span class="btn paid">Paid</span>
     {% endif %}
 
-    <form method="post"
-          action="{{ url_for('owner_cancel_order', store_id=store_id, order_id=o.id) }}"
-          onsubmit="disableButton(this.querySelector('button'))">
-      <button type="submit" class="btn cancel">Cancel</button>
-    </form>
+    {% if o.status != 'paid' or o.mode == 'ONLINE' %}
+      <form method="post"
+            action="{{ url_for('owner_cancel_order', store_id=store_id, order_id=o.id) }}"
+            onsubmit="disableButton(this.querySelector('button'))">
+        <button type="submit" class="btn cancel">Cancel</button>
+      </form>
+    {% endif %}
   </td>
 </tr>
 {% endfor %}
 </tbody>
-
 </table>
+
 <p style="text-align: right; margin-bottom: 1rem;">
   <a href="{{ url_for('edit_store', store_id=store_id) }}" class="edit-button-dark">✏️ Edit Store</a>
 </p>
-
-
-</p>
-
 
 </body>
 </html>

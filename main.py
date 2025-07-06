@@ -1,6 +1,8 @@
 # main.py  – TinyCart (orders + owner‑PIN + stock‑safe + owner approval)
 from dotenv import load_dotenv
 load_dotenv()  # Load environment variables from .env
+from datetime import datetime   # already imported? then skip
+CANCEL_WINDOW_MINUTES = 1       # ⚠️ demo value (1 min). Use 2880 for 2 days.
 
 import os, uuid, sqlite3, json, hashlib, base64, qrcode
 from io import BytesIO
@@ -8,6 +10,11 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from werkzeug.utils import secure_filename
 import smtplib, ssl
 from email.message import EmailMessage
+# ───────── extra for customer dashboard ─────────
+from datetime import datetime, timedelta
+
+import sqlite3
+import datetime
 from flask import flash, redirect, url_for
  # ───────── Forgot‑PIN flow ─────────
 from itsdangerous import URLSafeTimedSerializer
@@ -215,7 +222,7 @@ def submit_store():
 
     if taken:
         # 🚨 Show message & re‑render the SAME "add_product.html"
-        flash("❗ This PIN is already used. Please choose a different, unique PIN.", "error")
+        flash("❗ This PIN is already used. Please choose a different, unique PIN.", "addproduct")
 
         # how many product‑cards were on the form?
         prod_count = len(request.form.getlist("pname[]")) or 1
@@ -419,13 +426,14 @@ def checkout_single():
                            product_name=name,qty=qty,total=price*qty,is_cart=False)
 
 # ───────── choose payment ──────────
+# ───────── choose / save payment ──────────
 @app.route("/payment-options", methods=["POST"])
 def payment_options():
     order_id  = request.form["order_id"]
     store_id  = request.form["store_id"]
-    pay_mode  = request.form["pay_mode"]          # "cod" or "online"
+    pay_mode  = request.form["pay_mode"]           # "cod" or "online"
 
-    # 1️⃣  Save customer data + mode
+    # 1️⃣  save customer data + payment mode
     with db() as con:
         con.execute("""
             UPDATE orders
@@ -444,45 +452,85 @@ def payment_options():
             order_id,
         ))
 
-    row = db().cursor().execute(
-        "SELECT email, store_id FROM stores WHERE store_id=? LIMIT 1", (store_id,)
+    # ✅ SAVE EMAIL IN SESSION FOR CUSTOMER DASHBOARD
+    session['customer_email'] = request.form["customer_email"].strip()
+
+
+    # 🔔 Notify store owner about EVERY new order (COD or ONLINE)
+    owner_email_row = db().cursor().execute(
+        "SELECT email FROM stores WHERE store_id=? LIMIT 1", (store_id,)
     ).fetchone()
-    if row:
-        email, store_id = row
-        dashboard_link = url_for("owner_login", store=store_id, _external=True)
+    if owner_email_row and owner_email_row[0]:
+        dashboard_link = url_for('owner_login', store=store_id, _external=True)
         send_email(
-            email,
-            "🛒 New TinyCart order waiting!",
-            f"Hi there!\n\nOrder ID: {order_id}\nPayment mode: {pay_mode.upper()}\n"
+            owner_email_row[0],
+            "🎒 New TinyCart order – action needed!",
+            f"Hi there!\n\n"
+            f"Order ID: {order_id}\n"
+            f"Payment mode: {pay_mode.upper()}\n\n"
             f"Please check your dashboard and approve:\n{dashboard_link}\n\n"
             "You're getting orders — yay! 🎉"
         )
 
-
-    # 3️⃣  COD  →  straight to success page (still cancellable later)
+    # 2️⃣  ─────  COD  ─────
     if pay_mode == "cod":
-        return _finalize(order_id, "Order placed! Pay on delivery.")
+        # send confirmation email to customer
+        cust_email = request.form["customer_email"].strip()
+        if cust_email:
+            send_email(
+                cust_email,
+                "Your TinyCart order is confirmed 🛍️",
+                "Thank you for ordering with TinyCart!\n\n"
+                "Your payment will be collected on delivery.\n"
+                "You’ll receive a second email once the seller marks it paid.\n\n"
+                f"Order ID: {order_id}"
+            )
 
-    # 4️⃣  ONLINE  →  show QR / await‑payment page
+        # simple thank‑you page – order stays PENDING until seller clicks “Paid”
+        qty = sum(i["qty"] for i in json.loads(
+            db().cursor().execute(
+                "SELECT items_json FROM orders WHERE order_id=?", (order_id,)
+            ).fetchone()[0]
+        ))
+        return render_template(
+            "order_complete.html",
+            message="Order placed! Please pay cash on delivery.",
+            pname="your items",
+            qty=qty,
+            store_id=store_id
+        )
+
+    # 3️⃣  ─────  ONLINE  ─────  (notify owner, then show QR)
+    owner_email_row = db().cursor().execute(
+        "SELECT email FROM stores WHERE store_id=? LIMIT 1", (store_id,)
+    ).fetchone()
+    if owner_email_row and owner_email_row[0]:
+        dashboard_link = url_for("owner_login", store=store_id, _external=True)
+        send_email(
+            owner_email_row[0],
+            "🎒 New TinyCart order – awaiting payment!",
+            f"Order ID: {order_id}\n"
+            f"Payment mode: ONLINE\n\n"
+            f"Open dashboard to approve:\n{dashboard_link}"
+        )
+
+    # show QR page
     qr_file = _get_qr(store_id)
-    if qr_file:          # custom QR uploaded by owner
+    if qr_file:                       # custom UPI QR
         return render_template("await_payment.html",
                                qr_file=qr_file,
                                order_id=order_id,
                                amount=_order_total(order_id))
 
-    # fallback: auto‑generated demo QR
+    # fallback demo QR
     img  = qrcode.make(f"upi://pay?pa=demo@upi&am={_order_total(order_id)}&cu=INR")
     buf  = BytesIO(); img.save(buf, format="PNG")
     qr64 = base64.b64encode(buf.getvalue()).decode()
-
     return render_template("await_payment.html",
                            qr=qr64,
                            order_id=order_id,
                            amount=_order_total(order_id))
 
- 
- 
 
 # ───────── finalise & deduct stock ──
 def _finalize(order_id:str, msg:str):
@@ -682,7 +730,7 @@ def edit_store(store_id):
 # ───────── owner dashboard: list & manage orders ─────────
 # NOTE:  endpoint is now **owner_orders** so all url_for("owner_orders") links work
 # ───────── owner dashboard: list & manage orders ─────────
-# ───────── owner dashboard – list / manage orders ─────────
+## ───────── owner dashboard – list / manage orders ─────────
 @app.route("/owner/<store_id>/orders", endpoint="owner_orders")
 def owner_orders(store_id):
     if session.get("owner") != store_id:
@@ -693,7 +741,6 @@ def owner_orders(store_id):
         SELECT order_id, amount,
                customer_name, customer_phone, customer_email, address,
                payment_mode, status, items_json, created_at
-                     
         FROM   orders
         WHERE  store_id = ?
         ORDER  BY created_at DESC
@@ -701,6 +748,11 @@ def owner_orders(store_id):
 
     orders = []
     for oid, amt, cn, cp, cmail, addr, mode, stat, items_js, ts in rows:
+        # Skip abandoned / incomplete drafts
+        if not (cn and cp and cmail) or (mode is None or mode.upper() not in ["COD", "ONLINE"]):
+            continue
+
+        # product list for the little thumbnails
         plist = []
         items = json.loads(items_js or "[]")
         for it in items:
@@ -711,20 +763,74 @@ def owner_orders(store_id):
             ).fetchone()
             plist.append({"qty": qty, "name": name, "img": img})
 
+        # decide the icon based ONLY on status
+        if stat == "paid":
+            stat_icon = "✅"
+        elif stat in ["cancelled", "cancelled-by-customer", "cancelled-by-owner"]:
+            stat_icon = "❌"
+        else:
+            stat_icon = "—"
+
         orders.append({
-            "id":         oid,
-            "total":      amt,
-            "cust_name":  cn    or "—",
-            "cust_phone": cp    or "—",
-            "cust_mail":  cmail or "—",
-            "addr":       addr  or "—",
-            "mode":       (mode or "UNKNOWN").upper(),
-            "status":     stat,
+            "id":    oid,
+            "total": amt,
+            "cust_name":  cn,
+            "cust_phone": cp,
+            "cust_mail":  cmail,
+            "addr":       addr,
+            "mode":       mode.upper(),
+            "status":     stat,       # keep raw status for logic
+            "stat_icon":  stat_icon,  # show this in the table
             "plist":      plist
         })
 
     return render_template("owner_orders.html",
-                           orders=orders, store_id=store_id)
+                           orders=orders,
+                           store_id=store_id)
+
+@app.route("/owner/<store_id>/cancel-refund/<int:order_id>", methods=["POST"])
+def cancel_and_refund(store_id, order_id):
+    if session.get("owner") != store_id:
+        return "Not authorised", 403
+
+    c = db().cursor()
+    row = c.execute("""
+        SELECT payment_mode, customer_email, status
+        FROM orders
+        WHERE order_id = ? AND store_id = ?
+    """, (order_id, store_id)).fetchone()
+
+    if not row:
+        return "Order not found", 404
+
+    mode, email, status = row
+
+    # Allow cancellation only if paid and ONLINE
+    if mode.upper() != "ONLINE" or status != "paid":
+        flash("Only ONLINE + paid orders can be refunded.", "error")
+        return redirect(request.referrer or "/")
+
+    # ✅ Mark as cancelled
+    with db() as con:
+        con.execute("""
+            UPDATE orders
+            SET status = 'cancelled-by-owner',
+                cancelled = 1,
+                cancelled_by = 'owner'
+            WHERE order_id = ?
+        """, (order_id,))
+
+    # ✅ Send refund confirmation email
+    if email:
+        send_email(
+            email,
+            "Refund Credited 💸",
+            "Your refund has been credited for the cancelled order.\n\n"
+            "Please check your account. Thanks for shopping with us!"
+        )
+
+    flash("Order cancelled and refund email sent to customer.", "info")
+    return redirect(url_for("owner_orders", store_id=store_id))
 
 # ────── If owner CANCELS the order ──────
 @app.route("/order-cancelled/<order_id>")
@@ -741,43 +847,109 @@ def order_cancelled(order_id: str):
 # ───────── mark order as PAID (only for online/QR orders) ─────────
 @app.route("/owner/<store_id>/mark-paid/<order_id>", methods=["POST"])
 def owner_mark_paid(store_id, order_id):
-    if session.get("owner") != store_id:
+    # 🛡  protect the route, but compare as strings
+    if str(session.get("owner")) != str(store_id):
         return "Unauthorised", 403
 
-    _finalize(order_id, "🎉 Payment confirmed! Order marked paid.")
-
+    # Get payment mode and email
     row = db().cursor().execute(
-        "SELECT customer_email FROM orders WHERE order_id=?", (order_id,)
+        "SELECT payment_mode, customer_email FROM orders WHERE order_id=?", (order_id,)
     ).fetchone()
-    if row and row[0]:
-        send_email(row[0],
-                   "Order confirmed 🎉",
-                   "Your payment was received and your order is now on its way!")
+
+    if row:
+        mode, email = row
+
+        if mode == "ONLINE":
+            with db() as con:
+                con.execute("""
+                    UPDATE orders
+                       SET status = 'paid',
+                           updated_at = CURRENT_TIMESTAMP
+                     WHERE order_id = ?
+                """, (order_id,))
+        else:
+            # COD → update status and stock
+            with db() as con:
+                con.execute("""
+                    UPDATE orders
+                       SET status = 'paid',
+                           updated_at = CURRENT_TIMESTAMP
+                     WHERE order_id = ?
+                """, (order_id,))
+            _finalize(order_id, "🎉 Payment confirmed! Order marked paid.")
+
+        # Send e-mail to customer
+        if email:
+            if mode == "ONLINE":
+                send_email(
+                    email,
+                    "Online payment received – thank you! 🎉",
+                    "We’ve received your online payment. Your order has been marked as paid.\n\n"
+                    f"Order ID: {order_id}\n"
+                    "Thanks for shopping with TinyCart!"
+                )
+            else:  # COD
+                send_email(
+                    email,
+                    "Payment received – thank you! 🎉",
+                    "We’ve received your payment on delivery. Thank you for shopping with us!\n\n"
+                    f"Order ID: {order_id}\n"
+                    "Happy shopping with TinyCart!"
+                )
 
     return redirect(url_for("owner_orders", store_id=store_id))
-
-
-     
-     
-
 
 # ────── seller cancels any order ──────
 @app.route("/owner/<store_id>/cancel/<order_id>", methods=["POST"])
 def owner_cancel_order(store_id, order_id):
     if session.get("owner") != store_id:
         return "Unauthorised", 403
-    # grab customer email before cancellation
+
+    # get payment mode, status, and email
     row = db().cursor().execute(
-        "SELECT customer_email FROM orders WHERE order_id=?", (order_id,)
+        "SELECT payment_mode, status, customer_email FROM orders WHERE order_id=?",
+        (order_id,)
     ).fetchone()
+
+    if not row:
+        flash("Order not found.")
+        return redirect(url_for("owner_orders", store_id=store_id))
+
+    mode, status, email = row
+
+    # prevent cancel after paid (COD only)
+    if status == "paid" and mode == "COD":
+        flash("You cannot cancel a paid COD order.")
+        return redirect(url_for("owner_orders", store_id=store_id))
+
+    # cancel the order
     cancel_order(order_id)
-    if row and row[0]:
-        send_email(row[0],
-                   "Order cancelled 😔",
-                   "Unfortunately the seller has cancelled your order. "
-                   "Feel free to visit the store again and place a new one.")
+
+    # send email based on status/mode
+  # send email based on status/mode
+    if email:
+        if status == "paid" and mode.upper() == "ONLINE":
+            send_email(
+                email,
+                "Order Cancelled – Refund Initiated 💸",
+                "We're sorry to inform you that your order has been cancelled by the seller.\n"
+                "Since you had paid online, your refund will be processed within 2 working days.\n\n"
+                f"Order ID: {order_id}\n"
+                "Thank you for shopping with TinyCart."
+            )
+        else:
+            send_email(
+                email,
+                "Order Cancelled 😔",
+                "Unfortunately the seller has cancelled your order.\n\n"
+                f"Order ID: {order_id}\n"
+                "You can visit the store to explore and place a new order anytime."
+            )
+
+
     flash("Order cancelled.")
     return redirect(url_for("owner_orders", store_id=store_id))
+
 
 
 
@@ -813,6 +985,162 @@ def order_done(order_id: str):
         qty=qty,
         store_id=store_id
     )
+# ───────── customer dashboard ─────────
+# ───────── customer dashboard ─────────
+# ───────── customer dashboard ─────────
+from datetime import datetime
+import json
+from flask import session, redirect, render_template
+
+# ───────── customer dashboard ─────────
+# ───────── customer dashboard ─────────
+# ------------------------------------------------------------------
+# Customer dashboard – shows orders + 3‑minute (demo) cancel window
+# ------------------------------------------------------------------
+# ───────── customer dashboard ─────────
+# ───────── customer dashboard ─────────
+@app.route("/customer-dashboard")
+def customer_dashboard():
+    WINDOW_MIN = 5  # 5-minute cancel window
+
+    cust_email = session.get("customer_email")
+    if not cust_email:
+        return redirect("/")
+
+    c = db().cursor()
+    rows = c.execute("""
+        SELECT order_id, store_id, amount, items_json,
+               status, created_at, payment_mode, updated_at
+        FROM   orders
+        WHERE  customer_email = ?
+        ORDER  BY created_at DESC
+    """, (cust_email,)).fetchall()
+
+    orders = []
+    for oid, sid, amt, items_js, stat, created_at, mode, updated_at in rows:
+        # ── store label & link ──
+        store_name = c.execute("SELECT store_name FROM stores WHERE store_id=? LIMIT 1",
+                               (sid,)).fetchone()
+        store_name = store_name[0] if store_name else sid
+        store_url  = url_for("view_store", store_id=sid)
+
+        # ── thumbnails (qty only) ──
+        plist = []
+        for it in json.loads(items_js or "[]"):
+            pid, qty = it["pid"], it["qty"]
+            p_img = c.execute(
+                "SELECT p_i FROM stores WHERE store_id=? LIMIT 1 OFFSET ?",
+                (sid, pid)).fetchone()
+            img = p_img[0] if p_img else ""
+            img_url = url_for("static", filename=f"images/{img}") if img \
+                      else url_for("static", filename="images/no_image.png")
+            plist.append({"qty": qty, "img_url": img_url})
+
+        # ── Determine proper t_start ──
+        t_start = None
+        base_time = updated_at if (mode == "ONLINE" and stat == "paid") else created_at
+
+        if isinstance(base_time, datetime):
+            t_start = base_time
+        else:
+            for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S"):
+                try:
+                    t_start = datetime.strptime(base_time, fmt)
+                    break
+                except:
+                    continue
+
+        remaining_txt = "Invalid time"
+        can_cancel = False
+
+        if t_start:
+            elapsed = (datetime.utcnow() - t_start).total_seconds()
+            remaining_sec = max(WINDOW_MIN * 60 - int(elapsed), 0)
+
+            can_cancel = (stat in ["pending", "paid"]) and remaining_sec > 0
+            remaining_txt = (
+                "Expired" if remaining_sec == 0 else
+                f"{remaining_sec // 60} min" if remaining_sec >= 60 else
+                f"{remaining_sec} sec"
+            )
+
+
+        orders.append({
+            "id": oid,
+            "store_id": sid,
+            "store_name": store_name,
+            "store_url": store_url,
+            "total": amt,
+            "plist": plist,
+            "stat": stat,
+            "remaining_txt": remaining_txt,
+            "can_cancel": can_cancel,
+            
+              
+        })
+
+    return render_template("customer_dashboard.html",
+                           orders=orders,
+                           customer_email=cust_email)
+
+
+
+# ───────── cancel by customer ─────────
+# ───────── cancel by customer ─────────
+@app.route("/customer-cancel/<order_id>", methods=["POST"])
+def customer_cancel(order_id):
+    WINDOW_MIN = 5  # Cancel window = 5 minutes
+
+    c = db().cursor()
+    row = c.execute("""
+        SELECT store_id, status, payment_mode, created_at, updated_at, customer_email
+        FROM orders WHERE order_id = ?
+    """, (order_id,)).fetchone()
+
+    if not row:
+        flash("Order not found.", "error")
+        return redirect(request.referrer or "/")
+
+    store_id, status, mode, created_at, updated_at, cust_email = row
+
+    # 🕒 Determine start time for timer
+    try:
+        base_time = updated_at if status == 'paid' else created_at
+        if isinstance(base_time, str):
+            base_time = datetime.strptime(base_time.split(".")[0], "%Y-%m-%d %H:%M:%S")
+    except Exception:
+        base_time = datetime.utcnow()
+
+    # ❌ Only allow cancel if status is pending or paid
+    if status not in ("pending", "paid"):
+        flash("This order can no longer be cancelled.", "error")
+        return redirect(request.referrer or "/")
+
+    # ⏱ Cancel window expired?
+    if (datetime.utcnow() - base_time).total_seconds() > WINDOW_MIN * 60:
+        flash("Cancel window has expired.", "error")
+        return redirect(request.referrer or "/")
+
+    # ✅ Proceed with cancellation
+    with db() as con:
+        con.execute("UPDATE orders SET status='cancelled-by-customer' WHERE order_id=?", (order_id,))
+
+    # ✉ Notify store owner
+    owner_email = c.execute(
+        "SELECT email FROM stores WHERE store_id=? LIMIT 1", (store_id,)
+    ).fetchone()
+    if owner_email and owner_email[0]:
+        send_email(
+            owner_email[0],
+            "Order cancelled by customer ❌",
+            f"The customer has cancelled order {order_id}.\n"
+            f"Payment mode: {mode.upper()}\n"
+            "Please refund if it was paid online."
+        )
+
+    flash("Order cancelled. Confirmation sent.", "info")
+    return redirect(url_for("customer_dashboard"))
+
 
     
 
@@ -824,6 +1152,39 @@ def alter_db_add_payment_mode():
     except:
         pass
       # ignore if already added
+@app.route("/owner/<store_id>/send-refund/<order_id>", methods=["POST"])
+def send_refund_email(store_id, order_id):
+    if session.get("owner") != store_id:
+        return "Not authorised", 403
+
+    c = db().cursor()
+    row = c.execute("""
+        SELECT customer_email, payment_mode, status
+        FROM orders
+        WHERE order_id = ? AND store_id = ?
+    """, (order_id, store_id)).fetchone()
+
+    if not row:
+        flash("Order not found.", "error")
+        return redirect(request.referrer or "/")
+
+    email, mode, status = row
+
+    if not email or mode.upper() != "ONLINE" or "cancelled" not in status:
+        flash("Refund mail not applicable.", "error")
+        return redirect(request.referrer or "/")
+
+    send_email(
+        email,
+        "Refund Credited 💸",
+        f"Hi! Your refund for the cancelled order ({order_id}) has been successfully credited.\n\n"
+        "Please check your account or contact support if it hasn't appeared yet.\n"
+        "Thank you for shopping with TinyCart!"
+    )
+
+    flash("Refund confirmation email sent to customer.", "info")
+    return redirect(url_for("owner_orders", store_id=store_id))
+
 
 
 # ───────── run ─────────────────────

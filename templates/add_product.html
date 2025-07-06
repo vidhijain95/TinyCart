@@ -261,14 +261,17 @@
         </div>
     </nav>
  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <div class="flash-area">
-        {% for cat, msg in messages %}
-          <div class="flash {{ cat }}">{{ msg }}</div>
-        {% endfor %}
-      </div>
-    {% endif %}
-  {% endwith %}
+  {% if messages %}
+    <div class="flash-area">
+      {% for cat, msg in messages %}
+        {% if cat == 'addproduct' %}
+          <div class="flash error">{{ msg }}</div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
     <div class="container">
         <h1>Create Your Store</h1>
         <div class="info">

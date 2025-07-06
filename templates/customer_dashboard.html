@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Your TinyCart orders</title>
+<style>
+ body {
+   font-family: Segoe UI, Arial;
+   background: #f5f6fa;
+   padding: 40px;
+   margin: 0;
+ }
+ h2 {
+   text-align: center;
+   color: #232f3e;
+   margin-bottom: 24px;
+ }
+ table {
+   width: 100%;
+   max-width: 950px;
+   margin: auto;
+   background: #fffbe7;
+   border-collapse: collapse;
+   border-radius: 12px;
+   overflow: hidden;
+   box-shadow: 0 4px 16px rgba(0,0,0,.08);
+ }
+ th, td {
+   padding: 14px;
+   border-bottom: 1px solid #fceabb;
+   text-align: center;
+ }
+ thead {
+   background: #ffd580;
+   color: #232f3e;
+   font-weight: bold;
+ }
+ .btn {
+   padding: 6px 14px;
+   border: none;
+   border-radius: 6px;
+   font-weight: 600;
+   cursor: pointer;
+ }
+ .cancel {
+   background: #e74c3c;
+   color: #fff;
+ }
+ .cancel:hover {
+   background: #c0392b;
+ }
+ .disabled {
+   background: #aaa;
+   color: #eee;
+   cursor: not-allowed;
+ }
+ .item-box {
+   display: flex;
+   align-items: center;
+   gap: 10px;
+   margin-bottom: 6px;
+   justify-content: center;
+ }
+ .item-box img {
+   width: 40px;
+   height: 40px;
+   border-radius: 8px;
+   object-fit: cover;
+   border: 1px solid #ccc;
+ }
+ 
+</style>
+</head>
+<body>
+<h2>Your Orders ({{ customer_email }})</h2>
+
+<table>
+<thead>
+  <tr>
+    <th>ID</th>
+    <th>Store</th>
+    <th>Total ₹</th>
+    <th>Items</th>
+    <th>Status</th>
+    <th>Cancel</th>
+  </tr>
+</thead>
+<tbody>
+{% if orders|length == 0 %}
+<tr>
+  <td colspan="6" style="padding:30px;font-size:1.2rem">
+    Your dashboard is empty right now.<br>Placed orders will show here.
+  </td>
+</tr>
+{% endif %}
+
+{% for o in orders %}
+<tr>
+  <td>{{ o.id }}</td>
+  <td>
+    <a href="{{ o.store_url }}" style="text-decoration:none;color:#2c3e50;font-weight:600">
+      {{ o.store_name }}
+    </a>
+  </td>
+  <td>{{ "%.2f"|format(o.total) }}</td>
+  <td>
+    {% for p in o.plist %}
+    <div class="item-box">
+      <img src="{{ p.img_url }}" alt="item">
+      {{ p.qty }}×
+    </div>
+    {% endfor %}
+  </td>
+  <td>
+    {% if o.stat.startswith('cancelled') %}
+      ❌ Cancelled
+    {% elif o.stat == 'paid' %}
+      ✅ Paid
+    {% else %}
+      {{ o.stat|capitalize }}
+    {% endif %}
+  </td>
+  <td>
+   {% if o.can_cancel %}
+  <form action="{{ url_for('customer_cancel', order_id=o.id) }}" method="post"
+        onsubmit="return confirm('Cancel this order?');">
+    <button class="btn cancel">
+      Cancel&nbsp;({{ o.remaining_txt }})
+    </button>
+  </form>
+{% elif o.stat.startswith('cancelled') %}
+  ❌
+{% else %}
+  <button class="btn disabled" disabled>Expired</button>
+{% endif %}
+
+  </td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</body>
+</html> 
