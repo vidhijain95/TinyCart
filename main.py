@@ -26,7 +26,7 @@ from itsdangerous import URLSafeTimedSerializer
  
 
 app = Flask(__name__)
-app.secret_key = "super-secret"
+app.secret_key = os.getenv('SECRET_KEY')
 
  
 s = URLSafeTimedSerializer(app.secret_key)
