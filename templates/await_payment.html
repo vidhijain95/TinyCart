@@ -101,7 +101,7 @@
 <body>
   <div class="payment-box">
     <h2>Waiting for payment…</h2>
-    <p>Keep this tab open. Your order will confirm as soon as the seller marks your payment.</p>
+    <p>Keep this tab open while scanning qr. Your order will confirm as soon as the seller marks your payment . You will receive a confirmation mail from our Tiny Cart team.</p>
 
     {% if qr_file %}
       <img src="{{ url_for('static', filename='images/' + qr_file) }}" alt="QR">

@@ -1,9 +1,11 @@
 # main.py  – TinyCart (orders + owner‑PIN + stock‑safe + owner approval)
 from dotenv import load_dotenv
 load_dotenv()  # Load environment variables from .env
-from datetime import datetime   # already imported? then skip
+   # already imported? then skip
 CANCEL_WINDOW_MINUTES = 1       # ⚠️ demo value (1 min). Use 2880 for 2 days.
-
+from werkzeug.security import generate_password_hash, check_password_hash
+import os, sqlite3, uuid, hashlib
+from flask import Flask, render_template, request, redirect, session, flash, url_for
 import os, uuid, sqlite3, json, hashlib, base64, qrcode
 from io import BytesIO
 from flask import Flask, render_template, request, redirect, url_for, session, flash
@@ -14,10 +16,11 @@ from email.message import EmailMessage
 from datetime import datetime, timedelta
 
 import sqlite3
-import datetime
+ 
 from flask import flash, redirect, url_for
  # ───────── Forgot‑PIN flow ─────────
 from itsdangerous import URLSafeTimedSerializer
+
 #
 #  imports
  
@@ -134,47 +137,95 @@ def send_email(to_addr: str, subj: str, body: str):
 # ───────── Flask & config ──────────
   # <‑‑ add here
              # change in production!
-
+# ───────── File uploads ─────────
 UPLOAD_FOLDER = "static/images"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
-# ───────── DB helpers ──────────────
+# ───────── DB helpers ──────────
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # folder where main.py lives
+DB_PATH  = os.path.join(BASE_DIR, "tinycart.db")       # always use this file
+
 def db():
-    return sqlite3.connect("tinycart.db", detect_types=sqlite3.PARSE_DECLTYPES)
+    return sqlite3.connect(DB_PATH, detect_types=sqlite3.PARSE_DECLTYPES)
 
 def init_db():
-    con = db(); c = con.cursor()
-    # stores: one table row per *product*
-    c.execute("""CREATE TABLE IF NOT EXISTS stores(
-        store_id TEXT,  store_name  TEXT, store_desc TEXT,
-        email    TEXT,  owner_phone TEXT, owner_pin TEXT,
-        qr_file  TEXT,
-        p_name   TEXT,  p_d         TEXT,
-        p_p REAL, p_q INTEGER, p_i TEXT)""")
+    """Create tables if they don't exist (run once at startup)."""
+    with db() as con:
+        c = con.cursor()
 
-    # orders: one row per order
-    c.execute("""CREATE TABLE IF NOT EXISTS orders(
-        order_id TEXT PRIMARY KEY, store_id TEXT,
-        items_json TEXT, amount REAL,
-        customer_name TEXT, customer_phone TEXT, address TEXT,
-        status TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
-    con.commit(); con.close()
-init_db()
+        # stores: one row per *product*
+        c.execute("""CREATE TABLE IF NOT EXISTS stores(
+            store_id TEXT,  store_name  TEXT, store_desc TEXT,
+            email    TEXT,  owner_phone TEXT, owner_pin TEXT,
+            qr_file  TEXT,
+            p_name   TEXT,  p_d         TEXT,
+            p_p REAL, p_q INTEGER, p_i TEXT,
+            approved INTEGER DEFAULT 0,                          -- admin flag
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP       -- NEW column
+        )""")
+
+        # orders: one row per order
+        c.execute("""CREATE TABLE IF NOT EXISTS orders(
+            order_id TEXT PRIMARY KEY, store_id TEXT,
+            items_json TEXT, amount REAL,
+            customer_name TEXT, customer_phone TEXT, address TEXT,
+            status TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            payment_mode TEXT, customer_email TEXT
+        )""")
+
+init_db()   # create tables the first time
+
 def alter_db_once():
+    """
+    Add any new columns to old databases.
+    Runs at every startup but each ALTER is wrapped in try/except.
+    """
     with db() as con:
         cur = con.cursor()
-        # add missing columns if they don’t exist yet
         for col_sql in (
+            "ALTER TABLE stores ADD COLUMN approved INTEGER DEFAULT 0",
+            "ALTER TABLE stores ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
             "ALTER TABLE orders ADD COLUMN payment_mode TEXT",
-            "ALTER TABLE orders ADD COLUMN customer_email TEXT"
+            "ALTER TABLE orders ADD COLUMN customer_email TEXT",
         ):
-            try: cur.execute(col_sql)
+            try:
+                cur.execute(col_sql)
             except sqlite3.OperationalError:
-                pass   # already there
+                pass   # column already exists
 
-alter_db_once()    # run once on every start – harmless if already done
+alter_db_once()
 
+# ✅ New admin tables + approved flag (run once at startup)
+def _ensure_admin_tables():
+    """Create admin_users table and make sure approved column exists only once."""
+    with db() as con:
+        # 1️⃣ Create admin_users table if not exists
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS admin_users(
+                email         TEXT PRIMARY KEY,
+                password_hash TEXT NOT NULL
+            )
+        """)
+        # 2️⃣ Try adding approved column — ignore if already exists
+        try:
+            con.execute("ALTER TABLE stores ADD COLUMN approved INTEGER DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass  # column already exists, so ignore
+
+_ensure_admin_tables()  # 🟢 Call it right away like init_db
+print("🗄️  TinyCart DB path =", DB_PATH)
+def add_created_at_column():
+    with db() as con:
+        try:
+            con.execute("ALTER TABLE stores ADD COLUMN created_at TIMESTAMP")
+            print("✅ created_at column added (no default)")
+        except sqlite3.OperationalError as e:
+            print("⚠️", e)
+ 
+
+# ------------ UNCOMMENT the next line, run once, then comment it back -------------
+# add_created_at_column()
 
 # ───────── tiny helpers ────────────
 def _max_stock(store_id: str, pid: int) -> int:
@@ -208,50 +259,35 @@ def choose_count():
 # ───────── create store (POST) ─────
 # ───────── create store (POST) ─────
 # ───────── create store (POST) ───────────────────────────────────────────
+# ───────── create‑store (POST) ───────────────────────────────────────────
 @app.route("/submit-store", methods=["POST"])
 def submit_store():
-    store_id = uuid.uuid4().hex[:8]
+    """Wizard POST: create the new store + its products, then show success page."""
+    store_id = uuid.uuid4().hex[:8]                   # short public code
 
-    # 🔐 1.  Check the PIN
+    # 1️⃣  owner‑PIN must be unique ------------------------------------------------
     raw_pin  = request.form["owner_pin"].strip()
     pin_hash = hashlib.sha256(raw_pin.encode()).hexdigest()
 
-    taken = db().cursor().execute(
+    if db().cursor().execute(
         "SELECT 1 FROM stores WHERE owner_pin=? LIMIT 1", (pin_hash,)
-    ).fetchone()
-
-    if taken:
-        # 🚨 Show message & re‑render the SAME "add_product.html"
+    ).fetchone():
         flash("❗ This PIN is already used. Please choose a different, unique PIN.", "addproduct")
-
-        # how many product‑cards were on the form?
         prod_count = len(request.form.getlist("pname[]")) or 1
+        return render_template("add_product.html", count=prod_count, form=request.form)
 
-        return render_template(
-            "add_product.html",
-            count = prod_count,        # keeps the {% for i in range(count) %} happy
-            form  = request.form       # lets you pre‑fill fields if you wish
-        )
-
-    # ---- rest of submit_store() unchanged ----
-
-
-    # EITHER of the next two lines is fine – keep only one:
-                        # simplest
-    # return redirect(request.referrer or url_for("create_store"))
-
-    # 2️⃣  Optional QR upload  (no deep validation for now)  ──────────────
+    # 2️⃣  optional store‑level QR upload -----------------------------------------
     qr_name = ""
     f = request.files.get("qr_img")
     if f and f.filename:
         qr_name = secure_filename(f.filename)
         f.save(os.path.join(UPLOAD_FOLDER, qr_name))
 
-    # 3️⃣  Collect product arrays  ────────────────────────────────────────
-    p_name  = request.form.getlist("pname[]")
-    p_d     = request.form.getlist("pd[]")
-    p_p     = request.form.getlist("pp[]")
-    p_q     = request.form.getlist("pq[]")
+    # 3️⃣  collect product arrays --------------------------------------------------
+    p_name = request.form.getlist("pname[]")
+    p_d    = request.form.getlist("pd[]")
+    p_p    = request.form.getlist("pp[]")
+    p_q    = request.form.getlist("pq[]")
 
     img_lst = []
     for f in request.files.getlist("pi[]"):
@@ -262,51 +298,61 @@ def submit_store():
         else:
             img_lst.append("")
 
-    # 4️⃣  Owner e‑mail comes from the <input name="email"> field
-    owner_email = request.form.get("email", "").strip()
+    # 4️⃣  general owner data ------------------------------------------------------
+    owner_email  = request.form.get("email", "").strip()
+    owner_phone  = request.form["owner_phone"].strip()
+    store_name   = request.form["storename"].strip()
+    store_desc   = request.form["description"].strip()
 
-    # 5️⃣  Insert one row per product  ────────────────────────────────────
+    # 5️⃣  insert one DB row per product ------------------------------------------
     with db() as con:
         for i in range(len(p_name)):
-            con.execute(
-                """INSERT INTO stores VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
-                (
-                    store_id,
-                    request.form["storename"],
-                    request.form["description"],
-                    owner_email,
-                    request.form["owner_phone"],
-                    pin_hash,
-                    qr_name,
-                    p_name[i], p_d[i], p_p[i], p_q[i], img_lst[i],
-                ),
-            )
+            con.execute("""
+                INSERT INTO stores(
+                    store_id, store_name, store_desc,
+                    email, owner_phone, owner_pin, qr_file,
+                    p_name,  p_d,   p_p,  p_q,  p_i,
+                    approved, created_at
+                )
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """, (
+                store_id, store_name, store_desc,
+                owner_email, owner_phone, pin_hash, qr_name,
+                p_name[i], p_d[i], p_p[i], p_q[i], img_lst[i],
+                0,datetime.now()  # ← inserted manually
+            ))
 
-    # 6️⃣  Show success page with links  ──────────────────────────────────
-    public_link = request.host_url.rstrip("/") + url_for("view_store", store_id=store_id)
+
+    # 6️⃣  notify TinyCart admin ---------------------------------------------------
+    send_email(
+        "tinycart9005@gmail.com",
+        "🆕 Store awaiting approval",
+        f"Store ID: {store_id}\n"
+        f"Store name: {store_name}\n\n"
+        "Visit the admin dashboard to approve or reject."
+    )
+
+    # 7️⃣  success page ------------------------------------------------------------
+    public_link = url_for("view_store", store_id=store_id, _external=True)
     return render_template("store_created.html",
-                           full_url   = public_link,
-                           store_code = store_id)
-
-
-    # 5️⃣  ─── done!  show success page with the public link ──
-    link = request.host_url.rstrip("/") + url_for("view_store", store_id=store_id)
-    return render_template("store_created.html", full_url=link, store_code=store_id)
-
+                           full_url=public_link,
+                           store_code=store_id)
+#──── view store page (public link) ─────────
 # ───────── view store page (public link) ─────────
 @app.route("/store/<store_id>", endpoint="view_store")
 def view_store(store_id: str):
     """
-    Public storefront.  One product == one DB row in `stores`.
+    Public storefront. One product == one DB row in `stores`.
     """
-    cur   = db().cursor()
-    rows  = cur.execute(
-        "SELECT * FROM stores WHERE store_id=?",
+
+    cur = db().cursor()
+    rows = cur.execute(
+        "SELECT * FROM stores WHERE store_id=? AND approved=1",
         (store_id,)
     ).fetchall()
 
     if not rows:
-        return "Store not found 🤷‍♂️", 404
+        return "Store not found or not yet approved.", 404
 
     # rows[0] holds the general store data (name, desc, owner mail, phone …)
     store_name, store_desc = rows[0][1], rows[0][2]
@@ -314,12 +360,12 @@ def view_store(store_id: str):
 
     return render_template(
         "store.html",
-        store_name       = store_name,
-        store_description= store_desc,
-        owner_email      = owner_email,
-        owner_phone      = owner_phone,
-        products         = rows,        # the full product list
-        store_id         = store_id
+        store_name        = store_name,
+        store_description = store_desc,
+        owner_email       = owner_email,
+        owner_phone       = owner_phone,
+        products          = rows,        # the full product list
+        store_id          = store_id
     )
 
 # ───────── CART operations ─────────
@@ -733,6 +779,13 @@ def edit_store(store_id):
 ## ───────── owner dashboard – list / manage orders ─────────
 @app.route("/owner/<store_id>/orders", endpoint="owner_orders")
 def owner_orders(store_id):
+    row = db().cursor().execute(
+        "SELECT approved FROM stores WHERE store_id=? LIMIT 1",
+        (store_id,)
+    ).fetchone()
+
+    if not row or row[0] != 1:          # Approved flag must be 1
+        return "⏳  Your store is awaiting TinyCart approval.", 403
     if session.get("owner") != store_id:
         return "Not authorised", 403
 
@@ -1075,7 +1128,7 @@ def customer_dashboard():
             "stat": stat,
             "remaining_txt": remaining_txt,
             "can_cancel": can_cancel,
-            
+
               
         })
 
@@ -1185,7 +1238,116 @@ def send_refund_email(store_id, order_id):
     flash("Refund confirmation email sent to customer.", "info")
     return redirect(url_for("owner_orders", store_id=store_id))
 
+def get_products_by_store():
+    """
+    Returns a dict: {store_id: [(p_name, p_i_filename), ...]}
+    """
+    cur = db().cursor()
+    rows = cur.execute(
+        "SELECT store_id, p_name, p_i FROM stores ORDER BY rowid"
+    ).fetchall()
 
+    prod_dict = {}
+    for sid, pname, pimg in rows:
+        prod_dict.setdefault(sid, []).append((pname, pimg))
+    return prod_dict
+
+
+
+@app.route("/tiny-admin/stores")
+def tiny_admin_stores():
+    if not session.get("is_tinycart_admin"):
+        return "❌  Not accessible to you", 403
+
+    # main store rows (one per store, newest first)
+    rows = db().cursor().execute("""
+        SELECT store_id,
+               MAX(store_name)  AS store_name,
+               MAX(email)       AS email,
+               MAX(owner_phone) AS owner_phone,
+               MAX(approved)    AS approved,
+               MAX(created_at)  AS created_at
+        FROM   stores
+        GROUP  BY store_id
+        ORDER  BY MAX(created_at) DESC
+    """).fetchall()
+
+    # extra dict with product lists
+    product_map = get_products_by_store()
+
+    return render_template("tiny_admin_dashboard.html",
+                           rows=rows,
+                           product_map=product_map)
+
+@app.post("/tiny-admin/approve/<store_id>")
+def tiny_admin_approve(store_id):
+    if not session.get("is_tinycart_admin"):  # guard
+        return "❌", 403
+
+    with db() as con:
+        con.execute("UPDATE stores SET approved=1 WHERE store_id=?", (store_id,))
+
+    # mail the seller
+    email = db().cursor().execute(
+        "SELECT email FROM stores WHERE store_id=? LIMIT 1", (store_id,)
+    ).fetchone()[0]
+    send_email(
+        email,
+        "🎉 Your TinyCart store is live!",
+        "Hi!\nTinyCart has approved your store. "
+        "Share your public link and start selling!\n\n"
+        f"Link: {request.host_url.rstrip('/')}/store/{store_id}"
+    )
+    return redirect("/tiny-admin/stores")
+
+
+@app.post("/tiny-admin/reject/<store_id>")
+def tiny_admin_reject(store_id):
+    if not session.get("is_tinycart_admin"):
+        return "❌", 403
+
+    with db() as con:
+        con.execute("UPDATE stores SET approved=-1 WHERE store_id=?", (store_id,))
+
+    email = db().cursor().execute(
+        "SELECT email FROM stores WHERE store_id=? LIMIT 1", (store_id,)
+    ).fetchone()[0]
+    send_email(
+        email,
+        "Store request declined 😔",
+        "We’re sorry, but your store didn’t meet TinyCart’s guidelines.\n"
+        "Feel free to contact us for details."
+    )
+    return redirect("/tiny-admin/stores")
+
+@app.route("/admin-dashboard")
+def admin_dashboard():
+    if session.get("admin_email") != "tinycart9005@gmail.com":
+        return "Not authorized", 403
+ 
+
+@app.route("/admin-login", methods=["GET", "POST"])
+def admin_login():
+    if request.method == "POST":
+        email = request.form["email"].strip().lower()
+        pwd   = request.form["password"]
+
+        row = db().cursor().execute(
+            "SELECT password_hash FROM admin_users WHERE email=? LIMIT 1",
+            (email,)
+        ).fetchone()
+
+        if row and check_password_hash(row[0], pwd):
+            session["is_tinycart_admin"] = True
+            session["admin_email"]       = email
+            return redirect("/tiny-admin/stores")
+
+        flash("❌  Invalid e‑mail or password", "error")
+
+    return render_template("admin_login.html")
+
+
+    # Your dashboard logic
 
 # ───────── run ─────────────────────
 if __name__=="__main__":

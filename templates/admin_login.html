@@ -1,0 +1,84 @@
+<!-- templates/admin_login.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TinyCart Admin – Login</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(to right, #232f3e 65%, #febd69 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #2c3e50;
+    }
+
+    .login-box {
+      background: #fff;
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .login-box h2 {
+      margin-bottom: 20px;
+      color: #232f3e;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+
+    button {
+      width: 100%;
+      background: #232f3e;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: bold;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #1a2533;
+    }
+
+    .error-message {
+      margin-top: 10px;
+      color: #e74c3c;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <h2>TinyCart Admin – Sign in</h2>
+    <form method="post">
+      <input name="email" type="email" placeholder="E‑mail" required>
+      <input name="password" type="password" placeholder="Password" required>
+      <button>Log in</button>
+    </form>
+    {% with m = get_flashed_messages(category_filter=["error"]) %}
+      {% if m %}<p class="error-message">{{ m[0] }}</p>{% endif %}
+    {% endwith %}
+  </div>
+</body>
+</html>

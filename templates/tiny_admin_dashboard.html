@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TinyCart – Admin Stores</title>
+  <style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(to right, #232f3e 65%, #febd69 100%);
+    color: #232f3e;
+    min-height: 100vh;
+    padding: 40px;
+  }
+
+  h2 {
+    text-align: center;
+    margin-bottom: 24px;
+    color: #fff;
+    text-shadow: 1px 1px 2px #000;
+  }
+
+  table {
+    width: 100%;
+    max-width: 1200px;
+    margin: auto;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.1);
+    overflow: hidden;
+  }
+
+  th, td {
+    padding: 14px;
+    border-bottom: 1px solid #eee;
+    text-align: center;
+    vertical-align: top;
+  }
+
+  th {
+    background: #ffcc70;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #333;
+  }
+
+  button {
+    padding: 6px 10px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .ok { background: #27ae60; color: #fff; }
+  .no { background: #e74c3c; color: #fff; }
+
+  .thumb {
+    height: 60px;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  }
+
+  details summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: #444;
+    margin-bottom: 6px;
+  }
+
+  a {
+    text-decoration: none;
+    color: #2c3e50;
+    font-weight: bold;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+</style>
+
+</head>
+<body>
+
+<h2 style="text-align:center;margin-bottom:24px">TinyCart – Seller Stores</h2>
+
+<table>
+  <tr>
+    <th>Store Name</th>
+    <th>E‑mail / Phone</th>
+    <th>Products (+ images)</th>
+    <th>Status</th>
+    <th>Action</th>
+  </tr>
+
+  {% for s in rows %}
+  <tr>
+    <!-- 🔗 store name is now clickable -->
+    <td>
+      <a href="{{ url_for('view_store', store_id=s[0]) }}"
+         target="_blank"
+         style="text-decoration:none;font-weight:bold">
+        {{ s[1] }}
+      </a>
+    </td>
+
+    <td>
+      {{ s[2] }}<br>{{ s[3] }}
+    </td>
+
+    <td>
+      <details>
+        <summary>{{ product_map[s[0]]|length }} item(s)</summary>
+        {% for pname, pimg in product_map[s[0]] %}
+          <div style="margin:6px 0;display:flex;align-items:center;gap:8px">
+            {% if pimg %}
+              <img src="{{ url_for('static', filename='images/' ~ pimg) }}"
+                   class="thumb">
+            {% endif %}
+            <span>{{ pname }}</span>
+          </div>
+        {% endfor %}
+      </details>
+    </td>
+
+    <td>
+      {% if s[4]==1 %}✅ Approved
+      {% elif s[4]==-1 %}❌ Rejected
+      {% else %}⏳ Pending{% endif %}
+    </td>
+
+    <td>
+      {% if s[4] != 1 %}
+        <!-- show Approve only if not already approved -->
+        <form action="{{ url_for('tiny_admin_approve', store_id=s[0]) }}"
+              method="post" style="display:inline">
+          <button class="ok">Approve</button>
+        </form>
+      {% endif %}
+
+      <!-- Reject button always shown -->
+      <form action="{{ url_for('tiny_admin_reject', store_id=s[0]) }}"
+            method="post" style="display:inline">
+        <button class="no">Reject</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+</body>
+</html>

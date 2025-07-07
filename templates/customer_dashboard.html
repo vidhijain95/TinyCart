@@ -4,72 +4,83 @@
 <meta charset="UTF-8">
 <title>Your TinyCart orders</title>
 <style>
- body {
-   font-family: Segoe UI, Arial;
-   background: #f5f6fa;
-   padding: 40px;
-   margin: 0;
- }
- h2 {
-   text-align: center;
-   color: #232f3e;
-   margin-bottom: 24px;
- }
- table {
-   width: 100%;
-   max-width: 950px;
-   margin: auto;
-   background: #fffbe7;
-   border-collapse: collapse;
-   border-radius: 12px;
-   overflow: hidden;
-   box-shadow: 0 4px 16px rgba(0,0,0,.08);
- }
- th, td {
-   padding: 14px;
-   border-bottom: 1px solid #fceabb;
-   text-align: center;
- }
- thead {
-   background: #ffd580;
-   color: #232f3e;
-   font-weight: bold;
- }
- .btn {
-   padding: 6px 14px;
-   border: none;
-   border-radius: 6px;
-   font-weight: 600;
-   cursor: pointer;
- }
- .cancel {
-   background: #e74c3c;
-   color: #fff;
- }
- .cancel:hover {
-   background: #c0392b;
- }
- .disabled {
-   background: #aaa;
-   color: #eee;
-   cursor: not-allowed;
- }
- .item-box {
-   display: flex;
-   align-items: center;
-   gap: 10px;
-   margin-bottom: 6px;
-   justify-content: center;
- }
- .item-box img {
-   width: 40px;
-   height: 40px;
-   border-radius: 8px;
-   object-fit: cover;
-   border: 1px solid #ccc;
- }
- 
+  body {
+    font-family: Segoe UI, Arial;
+    background: linear-gradient(to right, #232f3e 65%, #febd69 100%);
+    padding: 40px;
+    margin: 0;
+    color: #232f3e;
+  }
+
+  h2 {
+    text-align: center;
+    color: #fff;
+    margin-bottom: 24px;
+  }
+
+  table {
+    width: 100%;
+    max-width: 950px;
+    margin: auto;
+    background: #fffbe7;
+    border-collapse: collapse;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .08);
+  }
+
+  th, td {
+    padding: 14px;
+    border-bottom: 1px solid #fceabb;
+    text-align: center;
+  }
+
+  thead {
+    background: #ffd580;
+    color: #232f3e;
+    font-weight: bold;
+  }
+
+  .btn {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .cancel {
+    background: #e74c3c;
+    color: #fff;
+  }
+
+  .cancel:hover {
+    background: #c0392b;
+  }
+
+  .disabled {
+    background: #aaa;
+    color: #eee;
+    cursor: not-allowed;
+  }
+
+  .item-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+    justify-content: center;
+  }
+
+  .item-box img {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid #ccc;
+  }
 </style>
+
 </head>
 <body>
 <h2>Your Orders ({{ customer_email }})</h2>
