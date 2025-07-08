@@ -1,8 +1,7 @@
-# main.py  – TinyCart (orders + owner‑PIN + stock‑safe + owner approval)
 from dotenv import load_dotenv
 load_dotenv()  # Load environment variables from .env
-   # already imported? then skip
-CANCEL_WINDOW_MINUTES = 1       # ⚠️ demo value (1 min). Use 2880 for 2 days.
+    
+CANCEL_WINDOW_MINUTES = 1       # demo value (1 min). Use 2880 for 2 days.
 from werkzeug.security import generate_password_hash, check_password_hash
 import os, sqlite3, uuid, hashlib
 from flask import Flask, render_template, request, redirect, session, flash, url_for
@@ -12,17 +11,15 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from werkzeug.utils import secure_filename
 import smtplib, ssl
 from email.message import EmailMessage
-# ───────── extra for customer dashboard ─────────
+ 
 from datetime import datetime, timedelta
 
 import sqlite3
  
 from flask import flash, redirect, url_for
- # ───────── Forgot‑PIN flow ─────────
+  
 from itsdangerous import URLSafeTimedSerializer
 
-#
-#  imports
  
 
 app = Flask(__name__)
@@ -31,14 +28,7 @@ app.secret_key = os.getenv('SECRET_KEY')
  
 s = URLSafeTimedSerializer(app.secret_key)
 
-# now it's safe to define:
  
-
- 
-
-
-
-# — A. enter e‑mail form —
 
 
 
@@ -48,7 +38,7 @@ SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 SMTP_SERVER   = "smtp.gmail.com"
 SMTP_PORT     = 465
 SENDER_NAME   = "TinyCart Store"
-# ───────── Forgot‑PIN flow ─────────
+ 
 @app.route("/forgot-pin", methods=["GET", "POST"])
 def forgot_pin():
     store_id = (request.args.get("store") or
@@ -134,10 +124,7 @@ def send_email(to_addr: str, subj: str, body: str):
 
 
 
-# ───────── Flask & config ──────────
-  # <‑‑ add here
-             # change in production!
-# ───────── File uploads ─────────
+ 
 UPLOAD_FOLDER = "static/images"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
@@ -196,7 +183,7 @@ def alter_db_once():
 
 alter_db_once()
 
-# ✅ New admin tables + approved flag (run once at startup)
+# New admin tables + approved flag (run once at startup)
 def _ensure_admin_tables():
     """Create admin_users table and make sure approved column exists only once."""
     with db() as con:
@@ -224,10 +211,8 @@ def add_created_at_column():
             print("⚠️", e)
  
 
-# ------------ UNCOMMENT the next line, run once, then comment it back -------------
-# add_created_at_column()
-
-# ───────── tiny helpers ────────────
+ 
+ 
 def _max_stock(store_id: str, pid: int) -> int:
     return db().cursor().execute(
         "SELECT p_q FROM stores WHERE store_id=? LIMIT 1 OFFSET ?",
@@ -243,12 +228,12 @@ def _order_total(order_id: str):
         "SELECT amount FROM orders WHERE order_id=?", (order_id,)).fetchone()
     return row[0] if row else 0.0
 
-# ───────── home ────────────────────
+ 
 @app.route("/")
 def home():
     return render_template("homee.html")
 
-# ───────── wizard: choose #products ─
+ 
 @app.route("/create-store", methods=["GET", "POST"])
 def choose_count():
     if request.method == "POST":
@@ -256,10 +241,7 @@ def choose_count():
                                count=int(request.form["count"]))
     return render_template("count.html")
 
-# ───────── create store (POST) ─────
-# ───────── create store (POST) ─────
-# ───────── create store (POST) ───────────────────────────────────────────
-# ───────── create‑store (POST) ───────────────────────────────────────────
+ 
 @app.route("/submit-store", methods=["POST"])
 def submit_store():
     """Wizard POST: create the new store + its products, then show success page."""
@@ -323,7 +305,7 @@ def submit_store():
             ))
 
 
-    # 6️⃣  notify TinyCart admin ---------------------------------------------------
+    # 6️  notify TinyCart admin ---------------------------------------------------
     send_email(
         "tinycart9005@gmail.com",
         "🆕 Store awaiting approval",
@@ -332,13 +314,12 @@ def submit_store():
         "Visit the admin dashboard to approve or reject."
     )
 
-    # 7️⃣  success page ------------------------------------------------------------
+    # 7️  success page ------------------------------------------------------------
     public_link = url_for("view_store", store_id=store_id, _external=True)
     return render_template("store_created.html",
                            full_url=public_link,
                            store_code=store_id)
-#──── view store page (public link) ─────────
-# ───────── view store page (public link) ─────────
+ 
 @app.route("/store/<store_id>", endpoint="view_store")
 def view_store(store_id: str):
     """
@@ -368,7 +349,7 @@ def view_store(store_id: str):
         store_id          = store_id
     )
 
-# ───────── CART operations ─────────
+ 
 @app.route("/add-to-cart", methods=["POST"])
 def add_to_cart():
     store_id = request.form["store_id"]
@@ -426,7 +407,7 @@ def update_cart():
     session.modified=True
     return redirect(url_for("view_cart", store_id=store_id))
 
-# ───────── ORDER helper ────────────
+ 
 def _create_order(store_id:str, items:list[dict]):
     """items = [{'pid':0,'qty':3}, …]"""
     amount=0; c=db().cursor()
@@ -448,7 +429,7 @@ def _create_order(store_id:str, items:list[dict]):
     c.connection.commit(); c.connection.close()
     return order_id, amount
 
-# ───────── checkout CART ───────────
+# 
 @app.route("/checkout-cart", methods=["POST"])
 def checkout_cart():
     store_id=request.form["store_id"]
@@ -460,7 +441,7 @@ def checkout_cart():
                            product_name="cart items",qty=sum(i['qty'] for i in cart),
                            total=total,is_cart=True)
 
-# ───────── checkout SINGLE ─────────
+# Buy now (older)
 @app.route("/checkout", methods=["POST"])
 def checkout_single():
     store_id=request.form["store_id"]; pid=int(request.form["product_id"]); qty=int(request.form["qty"])
@@ -471,15 +452,14 @@ def checkout_single():
     return render_template("checkout.html",store_id=store_id,order_id=order_id,
                            product_name=name,qty=qty,total=price*qty,is_cart=False)
 
-# ───────── choose payment ──────────
-# ───────── choose / save payment ──────────
+ 
 @app.route("/payment-options", methods=["POST"])
 def payment_options():
     order_id  = request.form["order_id"]
     store_id  = request.form["store_id"]
     pay_mode  = request.form["pay_mode"]           # "cod" or "online"
 
-    # 1️⃣  save customer data + payment mode
+    #  save customer data + payment mode
     with db() as con:
         con.execute("""
             UPDATE orders
@@ -498,11 +478,12 @@ def payment_options():
             order_id,
         ))
 
-    # ✅ SAVE EMAIL IN SESSION FOR CUSTOMER DASHBOARD
+    #  SAVE EMAIL IN SESSION FOR CUSTOMER DASHBOARD
     session['customer_email'] = request.form["customer_email"].strip()
+    _deduct_stock(order_id)
 
 
-    # 🔔 Notify store owner about EVERY new order (COD or ONLINE)
+    #  Notify store owner about EVERY new order (COD or ONLINE)
     owner_email_row = db().cursor().execute(
         "SELECT email FROM stores WHERE store_id=? LIMIT 1", (store_id,)
     ).fetchone()
@@ -518,7 +499,7 @@ def payment_options():
             "You're getting orders — yay! 🎉"
         )
 
-    # 2️⃣  ─────  COD  ─────
+    #   COD   
     if pay_mode == "cod":
         # send confirmation email to customer
         cust_email = request.form["customer_email"].strip()
@@ -546,7 +527,7 @@ def payment_options():
             store_id=store_id
         )
 
-    # 3️⃣  ─────  ONLINE  ─────  (notify owner, then show QR)
+    #  ONLINE   (notify owner, then show QR)
     owner_email_row = db().cursor().execute(
         "SELECT email FROM stores WHERE store_id=? LIMIT 1", (store_id,)
     ).fetchone()
@@ -578,7 +559,7 @@ def payment_options():
                            amount=_order_total(order_id))
 
 
-# ───────── finalise & deduct stock ──
+ 
 def _finalize(order_id:str, msg:str):
     con=db(); c=con.cursor()
     row=c.execute("SELECT store_id,items_json,status FROM orders WHERE order_id=?", (order_id,)).fetchone()
@@ -601,23 +582,43 @@ def _finalize(order_id:str, msg:str):
     return render_template("order_complete.html",message=msg,
                            pname="your items",qty=sum(i['qty'] for i in items),
                            store_id=store_id)
+def _deduct_stock(order_id: str):
+    """Only deduct stock for the order — don’t change order status."""
+    con = db(); c = con.cursor()
+    row = c.execute("SELECT store_id, items_json FROM orders WHERE order_id=?", (order_id,)).fetchone()
+    if not row:
+        con.close()
+        return
 
-# ───────── cancel order ────────────
+    store_id, items_json = row
+    items = json.loads(items_json)
+    for it in items:
+        stock = _max_stock(store_id, it["pid"])
+        if stock >= it["qty"]:
+            c.execute("""UPDATE stores SET p_q=p_q-? WHERE store_id=? AND
+                         rowid IN(SELECT rowid FROM stores WHERE store_id=? LIMIT 1 OFFSET ?)""",
+                      (it["qty"], store_id, store_id, it["pid"]))
+    con.commit()
+    con.close()
+
+ 
 @app.route("/cancel/<order_id>")
 def cancel_order(order_id):
-    con=db(); c=con.cursor()
-    row=c.execute("SELECT store_id,status,items_json FROM orders WHERE order_id=?", (order_id,)).fetchone()
-    if not row: return "No such order."
-    store_id,status,items_json=row
-    if status=="paid" and session.get("owner")!=store_id:
-        return "Cannot cancel a paid order without owner login.",403
-    if status=="paid":
-        items=json.loads(items_json)
-        for it in items:
-            c.execute("""UPDATE stores SET p_q=p_q+? WHERE store_id=? AND
-                         rowid IN(SELECT rowid FROM stores WHERE store_id=? LIMIT 1 OFFSET ?)""",
-                      (it["qty"],store_id,store_id,it["pid"]))
-    c.execute("UPDATE orders SET status='cancelled' WHERE order_id=?", (order_id,))
+    con = db(); c = con.cursor()
+    row = c.execute("SELECT store_id, status, items_json FROM orders WHERE order_id=?", (order_id,)).fetchone()
+    if not row:
+        return "No such order."
+    store_id, status, items_json = row
+
+    # Always restore stock, whether paid or pending
+    items = json.loads(items_json)
+    for it in items:
+        c.execute("""UPDATE stores SET p_q = p_q + ? WHERE store_id = ? AND
+                     rowid IN (SELECT rowid FROM stores WHERE store_id = ? LIMIT 1 OFFSET ?)""",
+                  (it["qty"], store_id, store_id, it["pid"]))
+
+    # Cancel the order
+    c.execute("UPDATE orders SET status = 'cancelled' WHERE order_id = ?", (order_id,))
     con.commit(); con.close()
     return "Order cancelled."
 
@@ -648,8 +649,7 @@ def owner_login():
         preset = store_id           # keep what they typed
 
     return render_template("owner_login.html", store_id=preset)
-# ───────── update a store + its products ─────────
-# ───────── update a store + its products + images ─────────
+ 
 @app.route("/update-store", methods=["POST"])
 def update_store():
     store_id = session.get("owner")
@@ -681,7 +681,7 @@ def update_store():
     with db() as con:
         cur = con.cursor()
 
-        # 1️⃣  update store meta (all rows share same data)
+        #  update store meta (all rows share same data)
         cur.execute("""
             UPDATE stores
                SET store_name  = ?,
@@ -693,7 +693,7 @@ def update_store():
         """.format(qr_sql=", qr_file = ?" if qr_name else ""),
         (storename, description, email, phone, *( (qr_name,) if qr_name else () ), store_id))
 
-        # 2️⃣  loop over every card
+        # loop over every card
         for idx, rid in enumerate(product_ids):
             # save new product image if uploaded
             new_img_file = uploaded_imgs[idx] if idx < len(uploaded_imgs) else None
@@ -732,7 +732,7 @@ def update_store():
     return redirect(url_for("owner_orders", store_id=store_id))
 
 
-# ───────── edit‑store page (prefill the form) ─────────
+ 
 @app.route("/edit-store/<store_id>")
 def edit_store(store_id):
     if session.get("owner") != store_id:
@@ -767,16 +767,7 @@ def edit_store(store_id):
 
 
 
-
-# ───────── owner dashboard: list & manage orders ─────────
  
- 
-# ───────── owner dashboard: list & manage orders ─────────
-# Keep the URL the same but expose it under the endpoint name “owner_orders”.
-# ───────── owner dashboard: list & manage orders ─────────
-# NOTE:  endpoint is now **owner_orders** so all url_for("owner_orders") links work
-# ───────── owner dashboard: list & manage orders ─────────
-## ───────── owner dashboard – list / manage orders ─────────
 @app.route("/owner/<store_id>/orders", endpoint="owner_orders")
 def owner_orders(store_id):
     row = db().cursor().execute(
@@ -863,7 +854,7 @@ def cancel_and_refund(store_id, order_id):
         flash("Only ONLINE + paid orders can be refunded.", "error")
         return redirect(request.referrer or "/")
 
-    # ✅ Mark as cancelled
+    # Mark as cancelled
     with db() as con:
         con.execute("""
             UPDATE orders
@@ -873,7 +864,7 @@ def cancel_and_refund(store_id, order_id):
             WHERE order_id = ?
         """, (order_id,))
 
-    # ✅ Send refund confirmation email
+    # Send refund confirmation email
     if email:
         send_email(
             email,
@@ -885,7 +876,7 @@ def cancel_and_refund(store_id, order_id):
     flash("Order cancelled and refund email sent to customer.", "info")
     return redirect(url_for("owner_orders", store_id=store_id))
 
-# ────── If owner CANCELS the order ──────
+ 
 @app.route("/order-cancelled/<order_id>")
 def order_cancelled(order_id: str):
     c = db().cursor()
@@ -952,7 +943,7 @@ def owner_mark_paid(store_id, order_id):
 
     return redirect(url_for("owner_orders", store_id=store_id))
 
-# ────── seller cancels any order ──────
+ 
 @app.route("/owner/<store_id>/cancel/<order_id>", methods=["POST"])
 def owner_cancel_order(store_id, order_id):
     if session.get("owner") != store_id:
@@ -1038,20 +1029,12 @@ def order_done(order_id: str):
         qty=qty,
         store_id=store_id
     )
-# ───────── customer dashboard ─────────
-# ───────── customer dashboard ─────────
-# ───────── customer dashboard ─────────
+ 
 from datetime import datetime
 import json
 from flask import session, redirect, render_template
 
-# ───────── customer dashboard ─────────
-# ───────── customer dashboard ─────────
-# ------------------------------------------------------------------
-# Customer dashboard – shows orders + 3‑minute (demo) cancel window
-# ------------------------------------------------------------------
-# ───────── customer dashboard ─────────
-# ───────── customer dashboard ─────────
+ 
 @app.route("/customer-dashboard")
 def customer_dashboard():
     WINDOW_MIN = 5  # 5-minute cancel window
@@ -1077,7 +1060,7 @@ def customer_dashboard():
         store_name = store_name[0] if store_name else sid
         store_url  = url_for("view_store", store_id=sid)
 
-        # ── thumbnails (qty only) ──
+        # thumbnails (qty only) 
         plist = []
         for it in json.loads(items_js or "[]"):
             pid, qty = it["pid"], it["qty"]
@@ -1089,7 +1072,7 @@ def customer_dashboard():
                       else url_for("static", filename="images/no_image.png")
             plist.append({"qty": qty, "img_url": img_url})
 
-        # ── Determine proper t_start ──
+        # Determine proper t_start 
         t_start = None
         base_time = updated_at if (mode == "ONLINE" and stat == "paid") else created_at
 
@@ -1138,66 +1121,72 @@ def customer_dashboard():
 
 
 
-# ───────── cancel by customer ─────────
-# ───────── cancel by customer ─────────
+ 
 @app.route("/customer-cancel/<order_id>", methods=["POST"])
 def customer_cancel(order_id):
     WINDOW_MIN = 5  # Cancel window = 5 minutes
 
-    c = db().cursor()
-    row = c.execute("""
-        SELECT store_id, status, payment_mode, created_at, updated_at, customer_email
-        FROM orders WHERE order_id = ?
-    """, (order_id,)).fetchone()
-
-    if not row:
-        flash("Order not found.", "error")
-        return redirect(request.referrer or "/")
-
-    store_id, status, mode, created_at, updated_at, cust_email = row
-
-    # 🕒 Determine start time for timer
-    try:
-        base_time = updated_at if status == 'paid' else created_at
-        if isinstance(base_time, str):
-            base_time = datetime.strptime(base_time.split(".")[0], "%Y-%m-%d %H:%M:%S")
-    except Exception:
-        base_time = datetime.utcnow()
-
-    # ❌ Only allow cancel if status is pending or paid
-    if status not in ("pending", "paid"):
-        flash("This order can no longer be cancelled.", "error")
-        return redirect(request.referrer or "/")
-
-    # ⏱ Cancel window expired?
-    if (datetime.utcnow() - base_time).total_seconds() > WINDOW_MIN * 60:
-        flash("Cancel window has expired.", "error")
-        return redirect(request.referrer or "/")
-
-    # ✅ Proceed with cancellation
     with db() as con:
-        con.execute("UPDATE orders SET status='cancelled-by-customer' WHERE order_id=?", (order_id,))
+        c = con.cursor()
+        row = c.execute("""
+            SELECT store_id, status, payment_mode, created_at, updated_at, customer_email
+            FROM orders WHERE order_id = ?
+        """, (order_id,)).fetchone()
 
-    # ✉ Notify store owner
-    owner_email = c.execute(
-        "SELECT email FROM stores WHERE store_id=? LIMIT 1", (store_id,)
-    ).fetchone()
-    if owner_email and owner_email[0]:
-        send_email(
-            owner_email[0],
-            "Order cancelled by customer ❌",
-            f"The customer has cancelled order {order_id}.\n"
-            f"Payment mode: {mode.upper()}\n"
-            "Please refund if it was paid online."
-        )
+        if not row:
+            flash("Order not found.", "error")
+            return redirect(request.referrer or "/")
+
+        store_id, status, mode, created_at, updated_at, cust_email = row
+
+        # Determine start time for timer
+        try:
+            base_time = updated_at if status == 'paid' else created_at
+            if isinstance(base_time, str):
+                base_time = datetime.strptime(base_time.split(".")[0], "%Y-%m-%d %H:%M:%S")
+        except Exception:
+            base_time = datetime.utcnow()
+
+        #  Only allow cancel if status is pending or paid
+        if status not in ("pending", "paid"):
+            flash("This order can no longer be cancelled.", "error")
+            return redirect(request.referrer or "/")
+
+        #  Cancel window expired?
+        if (datetime.utcnow() - base_time).total_seconds() > WINDOW_MIN * 60:
+            flash("Cancel window has expired.", "error")
+            return redirect(request.referrer or "/")
+
+        #  Restore product quantity
+        items_row = c.execute("SELECT items_json FROM orders WHERE order_id=?", (order_id,)).fetchone()
+        if items_row:
+            items = json.loads(items_row[0])
+            for it in items:
+                c.execute("""UPDATE stores SET p_q = p_q + ? WHERE store_id = ? AND
+                             rowid IN (SELECT rowid FROM stores WHERE store_id = ? LIMIT 1 OFFSET ?)""",
+                          (it["qty"], store_id, store_id, it["pid"]))
+
+        #  Cancel the order
+        c.execute("UPDATE orders SET status='cancelled-by-customer' WHERE order_id=?", (order_id,))
+
+        # ✉ Notify store owner
+        owner_email = c.execute(
+            "SELECT email FROM stores WHERE store_id=? LIMIT 1", (store_id,)
+        ).fetchone()
+        if owner_email and owner_email[0]:
+            send_email(
+                owner_email[0],
+                "Order cancelled by customer ❌",
+                f"The customer has cancelled order {order_id}.\n"
+                f"Payment mode: {mode.upper()}\n"
+                "Please refund if it was paid online."
+            )
 
     flash("Order cancelled. Confirmation sent.", "info")
     return redirect(url_for("customer_dashboard"))
 
 
-    
 
-# ─────── optional: call this ONCE to add payment_mode column to DB ───────
 def alter_db_add_payment_mode():
     try:
         with db() as con:
@@ -1349,6 +1338,6 @@ def admin_login():
 
     # Your dashboard logic
 
-# ───────── run ─────────────────────
+#  run 
 if __name__=="__main__":
     app.run(debug=True)
