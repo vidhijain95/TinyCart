@@ -765,13 +765,13 @@ def update_store():
             new_img_file = uploaded_imgs[idx] if idx < len(uploaded_imgs) else None
             img_name = current_imgs[idx].strip() if idx < len(current_imgs) else ""
 
-            # 🧠 Determine final image (if uploaded, use it; else keep old one)
+            # Determine final image (if uploaded, use it; else keep old one)
             if new_img_file and new_img_file.filename:
                 img_name = secure_filename(new_img_file.filename)
                 new_img_file.save(os.path.join(app.config["UPLOAD_FOLDER"], img_name))
 
             # ❗ Validate required fields
-            # ✅ Skip completely empty new rows (user added nothing)
+            #  Skip completely empty new rows (user added nothing)
             if not (name or desc or qty_raw or price_raw or img_name):
                  continue
 
@@ -781,7 +781,7 @@ def update_store():
                 return redirect(url_for("edit_store", store_id=store_id))
             
 
-            # 🔒 For new products, image is required
+            #  For new products, image is required
             if not rid and not img_name:
                 flash("❗ Please upload an image for all new products.", "error")
                 return redirect(url_for("edit_store", store_id=store_id))
