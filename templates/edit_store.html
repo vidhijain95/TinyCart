@@ -135,7 +135,12 @@
 
       <label>Replace Image (optional):</label>
       <input type="file" name="pi[]" accept="image/*">
+      <label>
+    <input type="checkbox" name="delete_product[]" value="{{ p[0] }}">
+    Delete this product
+  </label>
     </div>
+
     {% endfor %}
 
     <!-- ===== New products ===== -->

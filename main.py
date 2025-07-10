@@ -214,9 +214,12 @@ def add_created_at_column():
  
  
 def _max_stock(store_id: str, pid: int) -> int:
-    return db().cursor().execute(
+    row = db().cursor().execute(
         "SELECT p_q FROM stores WHERE store_id=? LIMIT 1 OFFSET ?",
-        (store_id, pid)).fetchone()[0]
+        (store_id, pid)).fetchone()
+
+    return row[0] if row else 0   # if product is missing, return 0 stock
+
 
 def _get_qr(store_id: str):
     row = db().cursor().execute(
@@ -368,7 +371,7 @@ def add_to_cart():
 
 @app.route("/cart/<store_id>")
 def view_cart(store_id):
-    raw = [i for i in session.get("cart", []) if i["store_id"]==store_id]
+    raw = [i for i in session.get("cart", []) if i["store_id"] == store_id]
     if not raw:
         return render_template("cart_empty.html", store_id=store_id)
 
@@ -378,18 +381,42 @@ def view_cart(store_id):
         merged[it["product_id"]] = merged.get(it["product_id"], 0) + it["qty"]
     cart = [{"store_id": store_id, "product_id": pid, "qty": qty}
             for pid, qty in merged.items()]
-    session["cart"] = cart; session.modified = True
+    session["cart"] = cart
+    session.modified = True
 
     # build display rows
-    items=[]; total=0; c=db().cursor()
+    items = []
+    total = 0
+    c = db().cursor()
+    cleaned_cart = []
+
     for it in cart:
-        name,price,stock,img=c.execute(
-            "SELECT p_name,p_p,p_q,p_i FROM stores WHERE store_id=? LIMIT 1 OFFSET ?",
-            (store_id,it["product_id"])).fetchone()
-        qty=min(it["qty"],stock); it["qty"]=qty
-        sub=price*qty; total+=sub
-        items.append({"pid":it["product_id"],"name":name,"price":price,
-                      "qty":qty,"subtotal":sub,"stock":stock,"img":img})
+        row = c.execute(
+            "SELECT p_name, p_p, p_q, p_i FROM stores WHERE store_id=? LIMIT 1 OFFSET ?",
+            (store_id, it["product_id"])
+        ).fetchone()
+
+        if not row:
+            # remove deleted product from session cart
+            session["cart"] = [x for x in session["cart"] if not (x["store_id"] == store_id and x["product_id"] == it["product_id"])]
+            session.modified = True
+            continue
+
+        name, price, stock, img = row
+        qty = min(it["qty"], stock)
+        it["qty"] = qty
+        sub = price * qty
+        total += sub
+        items.append({
+            "pid": it["product_id"],
+            "name": name,
+            "price": price,
+            "qty": qty,
+            "subtotal": sub,
+            "stock": stock,
+            "img": img
+        })
+
     return render_template("cart.html", items=items, total=total, store_id=store_id)
 
 @app.route("/remove-from-cart/<store_id>/<int:pid>")
@@ -432,14 +459,39 @@ def _create_order(store_id:str, items:list[dict]):
 # 
 @app.route("/checkout-cart", methods=["POST"])
 def checkout_cart():
-    store_id=request.form["store_id"]
-    cart=[i for i in session.get("cart",[]) if i["store_id"]==store_id]
-    if not cart: return redirect(url_for("view_cart", store_id=store_id))
-    items=[{"pid":i["product_id"],"qty":i["qty"]} for i in cart]
-    order_id,total=_create_order(store_id,items)
-    return render_template("checkout.html",store_id=store_id,order_id=order_id,
-                           product_name="cart items",qty=sum(i['qty'] for i in cart),
-                           total=total,is_cart=True)
+    store_id = request.form["store_id"]
+    cart = [i for i in session.get("cart", []) if i["store_id"] == store_id]
+    if not cart:
+        return redirect(url_for("view_cart", store_id=store_id))
+
+    # filter valid products only
+    items = []
+    c = db().cursor()
+    for i in cart:
+        row = c.execute(
+            "SELECT 1 FROM stores WHERE store_id=? LIMIT 1 OFFSET ?",
+            (store_id, i["product_id"])
+        ).fetchone()
+        if row:
+            items.append({"pid": i["product_id"], "qty": i["qty"]})
+        else:
+            # remove deleted product from cart
+            session["cart"] = [x for x in session["cart"]
+                               if not (x["store_id"] == store_id and x["product_id"] == i["product_id"])]
+            session.modified = True
+
+    if not items:
+        return redirect(url_for("view_cart", store_id=store_id))
+
+    order_id, total = _create_order(store_id, items)
+    return render_template("checkout.html",
+                           store_id=store_id,
+                           order_id=order_id,
+                           product_name="cart items",
+                           qty=sum(i['qty'] for i in items),
+                           total=total,
+                           is_cart=True)
+
 
 # Buy now (older)
 @app.route("/checkout", methods=["POST"])
@@ -650,6 +702,8 @@ def owner_login():
 
     return render_template("owner_login.html", store_id=preset)
  
+from datetime import datetime  # Ensure this is imported at the top
+
 @app.route("/update-store", methods=["POST"])
 def update_store():
     store_id = session.get("owner")
@@ -664,12 +718,13 @@ def update_store():
 
     # ── product arrays ──
     product_ids   = request.form.getlist("product_id[]")   # rowid or ""
+    delete_ids    = request.form.getlist("delete_product[]")  # newly added
     pnames        = request.form.getlist("pname[]")
     pds           = request.form.getlist("pd[]")
     pqs           = request.form.getlist("pq[]")
     pps           = request.form.getlist("pp[]")
-    current_imgs  = request.form.getlist("current_img[]")  # filenames already in DB
-    uploaded_imgs = request.files.getlist("pi[]")          # one <input type=file> per card
+    current_imgs  = request.form.getlist("current_img[]")
+    uploaded_imgs = request.files.getlist("pi[]")
 
     # ── optional new store‑level QR ──
     qr_name = None
@@ -681,7 +736,7 @@ def update_store():
     with db() as con:
         cur = con.cursor()
 
-        #  update store meta (all rows share same data)
+        # ── update shared store data ──
         cur.execute("""
             UPDATE stores
                SET store_name  = ?,
@@ -693,44 +748,77 @@ def update_store():
         """.format(qr_sql=", qr_file = ?" if qr_name else ""),
         (storename, description, email, phone, *( (qr_name,) if qr_name else () ), store_id))
 
-        # loop over every card
+        # ── process each product card ──
         for idx, rid in enumerate(product_ids):
-            # save new product image if uploaded
+            if rid and rid in delete_ids:
+                # DELETE selected product
+                cur.execute("DELETE FROM stores WHERE store_id = ? AND rowid = ?", (store_id, rid))
+                continue
+
+            # Get form data
+            name = pnames[idx].strip()
+            desc = pds[idx].strip()
+            qty_raw = pqs[idx].strip()
+            price_raw = pps[idx].strip()
+
+            # Handle images
             new_img_file = uploaded_imgs[idx] if idx < len(uploaded_imgs) else None
-            img_name = current_imgs[idx]           # default = keep old
+            img_name = current_imgs[idx].strip() if idx < len(current_imgs) else ""
+
+            # 🧠 Determine final image (if uploaded, use it; else keep old one)
             if new_img_file and new_img_file.filename:
                 img_name = secure_filename(new_img_file.filename)
                 new_img_file.save(os.path.join(app.config["UPLOAD_FOLDER"], img_name))
 
-            # empty rows (no name + no price) are ignored
-            if not pnames[idx].strip() and not pps[idx].strip():
-                continue
+            # ❗ Validate required fields
+            # ✅ Skip completely empty new rows (user added nothing)
+            if not (name or desc or qty_raw or price_raw or img_name):
+                 continue
 
-            if rid:   # -------- existing product --------
+# ❗ Now validate partial/invalid entries
+            if not name or not desc or not qty_raw or not price_raw:
+                flash("❗ Please fill all product details (name, description, quantity, price).", "error")
+                return redirect(url_for("edit_store", store_id=store_id))
+            
+
+            # 🔒 For new products, image is required
+            if not rid and not img_name:
+                flash("❗ Please upload an image for all new products.", "error")
+                return redirect(url_for("edit_store", store_id=store_id))
+
+            try:
+                qty = int(qty_raw)
+                price = float(price_raw)
+            except ValueError:
+                flash("❗ Quantity must be an integer and price must be a number.", "error")
+                return redirect(url_for("edit_store", store_id=store_id))
+
+            if rid:
+                # UPDATE existing product
                 cur.execute("""
                     UPDATE stores
                        SET p_name = ?, p_d = ?, p_q = ?, p_p = ?, p_i = ?
                      WHERE store_id = ? AND rowid = ?
-                """, (pnames[idx], pds[idx], pqs[idx], pps[idx], img_name,
-                      store_id, rid))
-            else:    # -------- brand‑new product --------
+                """, (name, desc, qty, price, img_name, store_id, rid))
+            else:
+                # INSERT new product
                 cur.execute("""
                     INSERT INTO stores(
                         store_id, store_name, store_desc,
                         email, owner_phone, owner_pin, qr_file,
-                        p_name, p_d, p_p, p_q, p_i
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                        p_name, p_d, p_p, p_q, p_i, approved, created_at
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """, (
                     store_id, storename, description,
-                    email, phone, "", qr_name or "",      # we don’t change owner_pin here
-                    pnames[idx], pds[idx], pps[idx], pqs[idx], img_name
+                    email, phone, "", qr_name or "",
+                    name, desc, price, qty, img_name,
+                    1, datetime.now()
                 ))
 
         con.commit()
 
     flash("Store updated successfully!", "success")
     return redirect(url_for("owner_orders", store_id=store_id))
-
 
  
 @app.route("/edit-store/<store_id>")
