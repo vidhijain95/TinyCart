@@ -889,10 +889,14 @@ def owner_orders(store_id):
         items = json.loads(items_js or "[]")
         for it in items:
             pid, qty = it["pid"], it["qty"]
-            name, img = c.execute(
+            row = c.execute(
                 "SELECT p_name, p_i FROM stores WHERE store_id=? LIMIT 1 OFFSET ?",
                 (store_id, pid)
             ).fetchone()
+            if row:
+                name, img = row
+            else:
+                name, img = "Item", ""
             plist.append({"qty": qty, "name": name, "img": img})
 
         # decide the icon based ONLY on status
@@ -919,6 +923,7 @@ def owner_orders(store_id):
     return render_template("owner_orders.html",
                            orders=orders,
                            store_id=store_id)
+
 
 @app.route("/owner/<store_id>/cancel-refund/<int:order_id>", methods=["POST"])
 def cancel_and_refund(store_id, order_id):
