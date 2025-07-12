@@ -435,26 +435,51 @@ def update_cart():
     return redirect(url_for("view_cart", store_id=store_id))
 
  
-def _create_order(store_id:str, items:list[dict]):
-    """items = [{'pid':0,'qty':3}, …]"""
-    amount=0; c=db().cursor()
-    for it in items:
-        price=c.execute("SELECT p_p FROM stores WHERE store_id=? LIMIT 1 OFFSET ?",
-                        (store_id,it["pid"])).fetchone()[0]
-        amount+=price*it["qty"]
-    order_id=uuid.uuid4().hex[:10]
-    c.execute("""INSERT INTO orders
-    (order_id,store_id,items_json,amount,
-     customer_name,customer_phone,customer_email,address,
-     status,payment_mode)
-    VALUES(?,?,?,?,?,?,?,?,?,?)""",
-    (order_id,store_id,json.dumps(items),amount,
-     "","","","",           # will be filled later
-     "pending","")
-)
+def _create_order(store_id: str, items: list[dict]):
+    """items = [{'pid': 0, 'qty': 3}, …]"""
+    amount = 0
+    c = db().cursor()
+    final_items = []
 
-    c.connection.commit(); c.connection.close()
+    for it in items:
+        row = c.execute(
+            "SELECT p_name, p_p, p_i FROM stores WHERE store_id=? LIMIT 1 OFFSET ?",
+            (store_id, it["pid"])
+        ).fetchone()
+
+        if not row:
+            continue  # Product deleted — skip it
+
+        name, price, img = row
+        qty = it["qty"]
+        amount += price * qty
+
+        final_items.append({
+            "pid": it["pid"],
+            "qty": qty,
+            "name": name,
+            "img": img
+        })
+
+    order_id = uuid.uuid4().hex[:10]
+
+    c.execute("""INSERT INTO orders
+        (order_id, store_id, items_json, amount,
+         customer_name, customer_phone, customer_email, address,
+         status, payment_mode)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        order_id, store_id,
+        json.dumps(final_items),  # 🆕 includes name and img
+        amount,
+        "", "", "", "",           # customer fields filled later
+        "pending", ""
+    ))
+
+    c.connection.commit()
+    c.connection.close()
     return order_id, amount
+
 
 # 
 @app.route("/checkout-cart", methods=["POST"])
@@ -737,16 +762,25 @@ def update_store():
         cur = con.cursor()
 
         # ── update shared store data ──
-        cur.execute("""
-            UPDATE stores
-               SET store_name  = ?,
-                   store_desc  = ?,
-                   email       = ?,
-                   owner_phone = ?
-                   {qr_sql}
-             WHERE store_id    = ?
-        """.format(qr_sql=", qr_file = ?" if qr_name else ""),
-        (storename, description, email, phone, *( (qr_name,) if qr_name else () ), store_id))
+        if qr_name:
+            cur.execute("""
+                UPDATE stores
+                   SET store_name  = ?,
+                       store_desc  = ?,
+                       email       = ?,
+                       owner_phone = ?,
+                       qr_file     = ?
+                 WHERE store_id    = ?
+            """, (storename, description, email, phone, qr_name, store_id))
+        else:
+            cur.execute("""
+                UPDATE stores
+                   SET store_name  = ?,
+                       store_desc  = ?,
+                       email       = ?,
+                       owner_phone = ?
+                 WHERE store_id    = ?
+            """, (storename, description, email, phone, store_id))
 
         # ── process each product card ──
         for idx, rid in enumerate(product_ids):
@@ -771,17 +805,13 @@ def update_store():
                 new_img_file.save(os.path.join(app.config["UPLOAD_FOLDER"], img_name))
 
             # ❗ Validate required fields
-            #  Skip completely empty new rows (user added nothing)
             if not (name or desc or qty_raw or price_raw or img_name):
-                 continue
+                continue
 
-# ❗ Now validate partial/invalid entries
             if not name or not desc or not qty_raw or not price_raw:
                 flash("❗ Please fill all product details (name, description, quantity, price).", "error")
                 return redirect(url_for("edit_store", store_id=store_id))
-            
 
-            #  For new products, image is required
             if not rid and not img_name:
                 flash("❗ Please upload an image for all new products.", "error")
                 return redirect(url_for("edit_store", store_id=store_id))
@@ -820,7 +850,6 @@ def update_store():
     flash("Store updated successfully!", "success")
     return redirect(url_for("owner_orders", store_id=store_id))
 
- 
 @app.route("/edit-store/<store_id>")
 def edit_store(store_id):
     if session.get("owner") != store_id:
@@ -863,7 +892,7 @@ def owner_orders(store_id):
         (store_id,)
     ).fetchone()
 
-    if not row or row[0] != 1:          # Approved flag must be 1
+    if not row or row[0] != 1:
         return "⏳  Your store is awaiting TinyCart approval.", 403
     if session.get("owner") != store_id:
         return "Not authorised", 403
@@ -880,26 +909,17 @@ def owner_orders(store_id):
 
     orders = []
     for oid, amt, cn, cp, cmail, addr, mode, stat, items_js, ts in rows:
-        # Skip abandoned / incomplete drafts
         if not (cn and cp and cmail) or (mode is None or mode.upper() not in ["COD", "ONLINE"]):
             continue
 
-        # product list for the little thumbnails
         plist = []
         items = json.loads(items_js or "[]")
         for it in items:
-            pid, qty = it["pid"], it["qty"]
-            row = c.execute(
-                "SELECT p_name, p_i FROM stores WHERE store_id=? LIMIT 1 OFFSET ?",
-                (store_id, pid)
-            ).fetchone()
-            if row:
-                name, img = row
-            else:
-                name, img = "Item", ""
+            name = it.get("name", "Item")
+            img = it.get("img", "")
+            qty = it["qty"]
             plist.append({"qty": qty, "name": name, "img": img})
 
-        # decide the icon based ONLY on status
         if stat == "paid":
             stat_icon = "✅"
         elif stat in ["cancelled", "cancelled-by-customer", "cancelled-by-owner"]:
@@ -908,21 +928,22 @@ def owner_orders(store_id):
             stat_icon = "—"
 
         orders.append({
-            "id":    oid,
+            "id": oid,
             "total": amt,
-            "cust_name":  cn,
+            "cust_name": cn,
             "cust_phone": cp,
-            "cust_mail":  cmail,
-            "addr":       addr,
-            "mode":       mode.upper(),
-            "status":     stat,       # keep raw status for logic
-            "stat_icon":  stat_icon,  # show this in the table
-            "plist":      plist
+            "cust_mail": cmail,
+            "addr": addr,
+            "mode": mode.upper(),
+            "status": stat,
+            "stat_icon": stat_icon,
+            "plist": plist
         })
 
     return render_template("owner_orders.html",
                            orders=orders,
                            store_id=store_id)
+
 
 
 @app.route("/owner/<store_id>/cancel-refund/<int:order_id>", methods=["POST"])
@@ -1147,25 +1168,19 @@ def customer_dashboard():
 
     orders = []
     for oid, sid, amt, items_js, stat, created_at, mode, updated_at in rows:
-        # ── store label & link ──
         store_name = c.execute("SELECT store_name FROM stores WHERE store_id=? LIMIT 1",
                                (sid,)).fetchone()
         store_name = store_name[0] if store_name else sid
-        store_url  = url_for("view_store", store_id=sid)
+        store_url = url_for("view_store", store_id=sid)
 
-        # thumbnails (qty only) 
         plist = []
         for it in json.loads(items_js or "[]"):
-            pid, qty = it["pid"], it["qty"]
-            p_img = c.execute(
-                "SELECT p_i FROM stores WHERE store_id=? LIMIT 1 OFFSET ?",
-                (sid, pid)).fetchone()
-            img = p_img[0] if p_img else ""
+            img = it.get("img", "")
+            qty = it["qty"]
             img_url = url_for("static", filename=f"images/{img}") if img \
                       else url_for("static", filename="images/no_image.png")
             plist.append({"qty": qty, "img_url": img_url})
 
-        # Determine proper t_start 
         t_start = None
         base_time = updated_at if (mode == "ONLINE" and stat == "paid") else created_at
 
@@ -1193,7 +1208,6 @@ def customer_dashboard():
                 f"{remaining_sec} sec"
             )
 
-
         orders.append({
             "id": oid,
             "store_id": sid,
@@ -1203,14 +1217,13 @@ def customer_dashboard():
             "plist": plist,
             "stat": stat,
             "remaining_txt": remaining_txt,
-            "can_cancel": can_cancel,
-
-              
+            "can_cancel": can_cancel
         })
 
     return render_template("customer_dashboard.html",
                            orders=orders,
                            customer_email=cust_email)
+
 
 
 
@@ -1427,7 +1440,7 @@ def admin_login():
         flash("❌  Invalid e‑mail or password", "error")
 
     return render_template("admin_login.html")
-
+ 
 
     # Your dashboard logic
 

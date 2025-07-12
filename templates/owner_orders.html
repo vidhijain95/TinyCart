@@ -160,11 +160,12 @@ function disableButton(btn) {
   <td data-label="Total (₹)">{{ "%.2f"|format(o.total) }}</td>
 
   <td class="pic" data-label="Products">
-    {% for p in o.plist %}
-       <img src="{{ url_for('static', filename='images/' ~ p.img) }}" alt="Product">
-       ×{{ p.qty }}
-    {% endfor %}
-  </td>
+  {% for p in o.plist %}
+     <img src="{{ url_for('static', filename='images/' ~ p.img) if p.img else url_for('static', filename='images/no_image.png') }}" alt="Product">
+     ×{{ p.qty }}
+  {% endfor %}
+</td>
+
 
   <td data-label="Customer">{{ o.cust_name }}</td>
 
