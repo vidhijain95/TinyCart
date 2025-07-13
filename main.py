@@ -175,6 +175,10 @@ def alter_db_once():
             "ALTER TABLE stores ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
             "ALTER TABLE orders ADD COLUMN payment_mode TEXT",
             "ALTER TABLE orders ADD COLUMN customer_email TEXT",
+            "ALTER TABLE orders ADD COLUMN updated_at TIMESTAMP",
+            "ALTER TABLE orders ADD COLUMN cancelled INTEGER DEFAULT 0",       # ✅ Add this
+            "ALTER TABLE orders ADD COLUMN cancelled_by TEXT"
+
         ):
             try:
                 cur.execute(col_sql)
