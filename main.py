@@ -1361,15 +1361,10 @@ def tiny_admin_stores():
 
     # main store rows (one per store, newest first)
     rows = db().cursor().execute("""
-        SELECT store_id,
-               MAX(store_name)  AS store_name,
-               MAX(email)       AS email,
-               MAX(owner_phone) AS owner_phone,
-               MAX(approved)    AS approved,
-               MAX(created_at)  AS created_at
-        FROM   stores
-        GROUP  BY store_id
-        ORDER  BY MAX(created_at) DESC
+        SELECT store_id, store_name, email, owner_phone, approved, MAX(created_at)
+        FROM stores
+        GROUP BY store_id
+        ORDER BY MAX(created_at) DESC
     """).fetchall()
 
     # extra dict with product lists
@@ -1378,6 +1373,8 @@ def tiny_admin_stores():
     return render_template("tiny_admin_dashboard.html",
                            rows=rows,
                            product_map=product_map)
+
+
 
 @app.post("/tiny-admin/approve/<store_id>")
 def tiny_admin_approve(store_id):
