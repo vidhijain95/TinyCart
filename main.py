@@ -939,7 +939,8 @@ def owner_orders(store_id):
             "cust_mail": cmail,
             "addr": addr,
             "mode": mode.upper(),
-            "status": stat,
+            "status": ("cancelled-by-owner" if stat.lower() == "cancelled" and mode.upper() == "ONLINE" else stat.strip().lower()),
+
             "stat_icon": stat_icon,
             "plist": plist
         })

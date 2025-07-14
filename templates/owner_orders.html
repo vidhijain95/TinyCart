@@ -166,7 +166,6 @@ function disableButton(btn) {
   {% endfor %}
 </td>
 
-
   <td data-label="Customer">{{ o.cust_name }}</td>
 
   <td class="contact-info" data-label="Contact + Address">
@@ -176,18 +175,33 @@ function disableButton(btn) {
   </td>
 
   <td data-label="Mode"><span class="badge {{ o.mode }}">{{ o.mode }}</span></td>
-  <td data-label="Status" style="font-size: 1.3rem;">
-  {% if o.status in ['cancelled-by-customer', 'cancelled-by-owner'] and o.mode == 'ONLINE' %}
-    <form method="post"
-          action="{{ url_for('send_refund_email', store_id=store_id, order_id=o.id) }}"
-          onsubmit="disableButton(this.querySelector('button'))">
-      <button type="submit" class="btn" title="Send refund confirmation">❌</button>
-    </form>
-  {% else %}
-    {{ o.stat_icon }}
-  {% endif %}
-</td>
 
+  <!-- ✅ Refund button condition -->
+  <td data-label="Status" style="font-size: 1.3rem;">
+    {% if 'cancelled' in o.status and o.mode == 'ONLINE' %}
+      <form method="post"
+            action="{{ url_for('send_refund_email', store_id=store_id, order_id=o.id) }}"
+            onsubmit="disableButton(this.querySelector('button'))"
+            style="display:inline;">
+<button type="submit"
+        class="btn"
+        style="min-width: 40px; padding: 4px 10px; background-color: #f3f3f3; color: #f35c6e;
+               border: none; font-size: 0.85rem; border-radius: 8px; display: inline-flex;
+               align-items: center; justify-content: center; cursor: pointer;"
+        title="Send refund confirmation">
+  ❌
+</button>
+
+
+
+
+
+
+      </form>
+    {% else %}
+      {{ o.stat_icon }}
+    {% endif %}
+  </td>
 
   <td data-label="Action">
     {% if o.status == 'pending' and o.mode in ['ONLINE', 'COD'] %}
