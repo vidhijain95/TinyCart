@@ -1,3 +1,6 @@
 Flask
 gunicorn
 python-dotenv
+qrcode
+Pillow
+itsdangerous
