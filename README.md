@@ -1,43 +1,47 @@
-# 🛍️ TinyCart
+# 🛒 TinyCart – Simple Online Store for Small Sellers
 
-**Create Your Own Tiny Store in Seconds!**  
-*Empowering Small Sellers, Artists, and Students*
+TinyCart is a mini e-commerce platform for small, local sellers who do not sell on platforms like Amazon or Flipkart. It's perfect for handmade or low-quantity products sold via WhatsApp or Instagram.
 
----
+This app allows sellers to:
+- Create their own storefront
+- Accept orders online (COD or UPI QR)
+- Manage products and stock
+- Cancel/refund orders
+- View customer orders
+- Get notifications via email
 
-Are you a small seller, artist, or student looking to showcase or sell products online, but struggling with high costs, technical hassles, or lack of coding knowledge?  
-✨ **TinyCart** is here to help you launch your micro-store in minutes!
+## ✨ Features
 
----
+- 🔐 Secure owner dashboard (PIN protected)
+- 🛍️ Public customer view for each store
+- 📦 Admin approval for each store before it goes live
+- 💸 Online or COD payments
+- ⌛ Cancel window for customers (default 5 min)
+- 📧 Email notifications for:
+  - Orders
+  - Refunds
+  - Admin/store actions
 
-## 💡 What is TinyCart?
+## 🗂 Project Structure
 
-**TinyCart** is a micro-store generator built with Python and Flask. It allows users to create and share simple, no-login online stores — perfect for small sellers, students, and creators who want to start selling online fast.
+```
+TinyCart/
+├── main.py               # Main Flask app
+├── templates/            # All HTML templates (Jinja2)
+├── static/images/        # Product & QR images
+├── render.yaml           # Render deployment config
+├── requirements.txt      # Python dependencies
+├── tinycart.db           # SQLite database (auto-created)
+├── .env                  # Your secret credentials (DO NOT COMMIT)
+```
+## 🧑‍💻 Built With
 
----
+- Python (Flask)
+- SQLite
+- HTML, CSS (Jinja2 templates)
+- Gmail SMTP
+- Render.com for hosting
 
-## 🚀 Features
+## 💡 License
 
-- ⚡ Create an online store in seconds
-- 🖼️ Upload product names, prices, and images
-- 🔗 Shareable store link (copy-paste friendly)
-- 📱 Mobile-friendly layout
-- ✅ No coding required
-- 🔒 No login or sign-up needed
-- 💸 100% free and beginner-friendly
-
----
-
-## 🛠️ Tech Stack
-
-- Python
-- Flask (Backend)
-- HTML + CSS (Frontend)
-- Local file handling (for now)
-
----
-
-## 📷 Example Use Case 
-Imagine you sell handmade candles. Just visit the `Add Product` page, upload your product details, and get a store link like
- 
-
+This project is built for learning and demo use. You may modify and deploy it for real-world use at your own risk.

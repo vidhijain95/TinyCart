@@ -2,5 +2,7 @@ services:
   - type: web
     name: tinycart
     env: python
-    buildCommand: ""
-    startCommand: python main.py
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn main:app
+    plan: free
+
