@@ -1361,7 +1361,7 @@ def tiny_admin_stores():
 
     # main store rows (one per store, newest first)
     rows = db().cursor().execute("""
-        SELECT store_id, store_name, email, owner_phone, approved, MAX(created_at)
+        SELECT store_id, store_name, email, owner_phone, approved, MAX(created_at) AS created_at
         FROM stores
         GROUP BY store_id
         ORDER BY MAX(created_at) DESC
@@ -1373,6 +1373,7 @@ def tiny_admin_stores():
     return render_template("tiny_admin_dashboard.html",
                            rows=rows,
                            product_map=product_map)
+
 
 
 
