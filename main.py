@@ -29,7 +29,21 @@ app.secret_key = os.getenv('SECRET_KEY')
 s = URLSafeTimedSerializer(app.secret_key)
 
  
+ 
+# Get both keys from the environment
+user_key     = os.environ.get("TINY_LICENSE_KEY", "")
+original_key = os.environ.get("TINY_ORIGINAL_KEY", "")
 
+# Allow ONLY if: running locally (localhost) OR key is correct
+@app.before_request
+def block_unauthorized_deploy():
+    # Allow local dev — IPs like 127.0.0.1 or localhost with port
+    if request.host.startswith("127.0.0.1") or request.host.startswith("localhost"):
+        return
+
+    # For deployed version – only work if key matches
+    if user_key != original_key:
+        return "❌ Unauthorized deployment. Visit original TinyCart by BULBUL.", 403
 
 
 # Gmail sender details
