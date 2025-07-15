@@ -31,19 +31,7 @@ s = URLSafeTimedSerializer(app.secret_key)
  
  
 # Get both keys from the environment
-user_key     = os.environ.get("TINY_LICENSE_KEY", "")
-original_key = os.environ.get("TINY_ORIGINAL_KEY", "")
 
-# Allow ONLY if: running locally (localhost) OR key is correct
-@app.before_request
-def block_unauthorized_deploy():
-    # Allow local dev — IPs like 127.0.0.1 or localhost with port
-    if request.host.startswith("127.0.0.1") or request.host.startswith("localhost"):
-        return
-
-    # For deployed version – only work if key matches
-    if user_key != original_key:
-        return "❌ Unauthorized deployment. Visit original TinyCart by BULBUL.", 403
 
 
 # Gmail sender details
@@ -1009,7 +997,28 @@ def cancel_and_refund(store_id, order_id):
     flash("Order cancelled and refund email sent to customer.", "info")
     return redirect(url_for("owner_orders", store_id=store_id))
 
- 
+def _reverse(s): return s[::-1]
+def _hash(s): return hashlib.sha256(s.encode()).hexdigest()
+
+user_key     = os.environ.get("TINY_LICENSE_KEY", "")
+original_key = os.environ.get("TINY_ORIGINAL_KEY", "")
+
+@app.before_request
+def block_unauthorized_deploy():
+    host = request.host
+
+     
+    if host.startswith("127.0.0.1") or host.startswith("localhost"):
+        return
+
+     
+    if _hash(_reverse(user_key)) != _hash(_reverse(original_key)):
+        return (
+            "<h3>❌ Unauthorized deployment</h3>"
+            "<p>This copy of TinyCart is not licensed for deployment.</p>"
+            "<p>Visit the <a href='https://github.com/vidhijain95/TinyCart' target='_blank'>original project by Vidhi</a>.</p>",
+            403,
+        )
 @app.route("/order-cancelled/<order_id>")
 def order_cancelled(order_id: str):
     c = db().cursor()
