@@ -1467,10 +1467,35 @@ def admin_login():
 
     return render_template("admin_login.html")
  
+# <!--
+# @app.route("/set-admin-password", methods=["GET", "POST"])
+# def set_admin_password():
+#     if request.method == "POST":
+#         email    = request.form["email"].strip().lower()   # get email from form
+#         raw_pwd  = request.form["password"]                # get raw password
+#         pwd_hash = generate_password_hash(raw_pwd)         # hash using SHA-256 + salt
+
+#         with db() as con:
+#             con.execute("DELETE FROM admin_users")         # remove old admin
+#             con.execute("INSERT INTO admin_users VALUES(?, ?)", (email, pwd_hash))  # insert new one
+
+#         flash("TinyCart admin password set ✔")             # show success message
+#         return redirect("/admin-login")                    # redirect to login
+
+#     return render_template("reset_pin.html")               # make sure this file exists!
+# -->
+
+# 💡 To use this:
+# ➤ Create 'reset_pin.html' under /templates
+# ➤ Visit http://127.0.0.1:5000/set-admin-password
+# ➤ Enter email + new password
+# ➤ Done!
+
+    
 
 
 
-    # Your dashboard logic
+ 
 
 #  run 
 if __name__=="__main__":
